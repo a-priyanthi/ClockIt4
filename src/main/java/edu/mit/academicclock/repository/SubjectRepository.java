@@ -22,7 +22,16 @@ public class SubjectRepository implements CrudRepository<Subject, String> {
     @Override
     public Subject save(Subject s) {
         if (s.getId() == null || s.getId().isBlank()) {
-            s.setId("sub-" + UUID.randomUUID().toString().substring(0, 8));
+            Optional<Subject> existing = findByCode(s.getCode());
+            if (existing.isPresent()) {
+                s.setId(existing.get().getId());
+                if (s.getAttended() == 0 && s.getTotal() == 0) {
+                    s.setAttended(existing.get().getAttended());
+                    s.setTotal(existing.get().getTotal());
+                }
+            } else {
+                s.setId("sub-" + UUID.randomUUID().toString().substring(0, 8));
+            }
         }
 
         String sql = """
