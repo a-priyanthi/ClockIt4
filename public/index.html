@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Academic Clock — Interactive Platform (Java & SQL Database)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">◷</div>
+        <div>
+          <h1>MIT Academic Clock</h1>
+          <small>STUDY · PLAN · GROW</small>
+        </div>
+      </div>
+
+      <div class="nav-label">YOUR ACADEMIC SPACE</div>
+      <nav class="nav" id="nav">
+        <button class="active" data-screen="dashboard"><span>⌂</span>Overview</button>
+        <button data-screen="calendar"><span>▦</span>Calendar</button>
+        <button data-screen="events"><span>✳</span>Campus events</button>
+        <button data-screen="attendance"><span>✓</span>Attendance</button>
+        <button data-screen="syllabus"><span>▤</span>Syllabus</button>
+        <button data-screen="marks"><span>✎</span>Marks</button>
+        <button data-screen="journal"><span>✿</span>Journal</button>
+        <button data-screen="profile"><span>☺</span>My profile</button>
+        <button data-screen="admin"><span>⚙</span>Admin desk</button>
+        <button data-screen="login"><span>↪</span>Login screen</button>
+      </nav>
+
+      <div class="side-note">
+        “Small steps every day become big dreams.”<br>
+        <span style="font-size:11px;color:#7e9290">CS23304 Java Programming Capstone ♡</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main>
+      <!-- Top Navigation Bar -->
+      <header class="topbar">
+        <div>
+          <div class="crumb">MIT · CHENNAI / STUDENT SPACE</div>
+          <h2 id="topTitle">Your academic overview</h2>
+        </div>
+        <div class="top-actions">
+          <input class="search" id="globalSearch" placeholder="Search subjects, events (Enter)…" aria-label="Search">
+          <button class="profile-dot" data-goto="profile" title="Open profile">S</button>
+        </div>
+      </header>
+
+      <!-- 1. Dashboard Screen -->
+      <section class="screen active" id="dashboard">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">A LITTLE STRUCTURE, A LOT OF POSSIBILITY</div>
+            <h2>Good day, student ✿</h2>
+            <p>Your academic year, all in one calm place. Make space for studying and for yourself.</p>
+          </div>
+          <span class="pill db-live">● CONNECTED TO H2 SQL DATABASE</span>
+        </div>
+
+        <div class="grid overview-grid">
+          <!-- Academic Clock Panel -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>✧ Your Academic Clock</h3>
+              <button class="tiny-link" data-goto="calendar">Open calendar ↗</button>
+            </div>
+            <div class="clock-wrap">
+              <div class="clock" id="academicClock">
+                <div class="clock-center">
+                  <strong id="clockDate">20 OCT</strong>
+                  <small id="clockYear">2026 · LIVE DB</small>
+                </div>
+                <div class="hand" id="hourHand"></div>
+                <div class="hand second" id="minuteHand"></div>
+                <div class="hand-dot"></div>
+              </div>
+              <div>
+                <div class="eyebrow">THE SEMESTER, AT A GLANCE</div>
+                <div class="clock-legend" style="margin-top:13px">
+                  <div class="legend-item"><i class="swatch" style="background:#d99588"></i>Registration deadline</div>
+                  <div class="legend-item"><i class="swatch" style="background:#8fb6c2"></i>Assignment due</div>
+                  <div class="legend-item"><i class="swatch" style="background:#9ebd8e"></i>Completed work</div>
+                  <div class="legend-item"><i class="swatch" style="background:#e6c96e"></i>Campus event</div>
+                  <div class="legend-item"><i class="swatch" style="background:#b2a5ce"></i>Exam / lab</div>
+                  <div class="legend-item"><i class="swatch" style="background:#d9b9a3"></i>End-semester</div>
+                </div>
+                <div class="note blue">The wheel is a visual year planner. Activity pins are synchronized live with your JDBC database schedule.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Panel -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Little wins, big picture</h3>
+              <span class="pill db-live">LIVE METRICS</span>
+            </div>
+            <div class="stat-grid">
+              <div class="stat">
+                <small>AVG. ATTENDANCE</small>
+                <strong id="dashAttendance">86%</strong>
+                <small>Across database subjects</small>
+              </div>
+              <div class="stat">
+                <small>UPCOMING</small>
+                <strong id="dashUpcoming">04</strong>
+                <small>Due dates & events</small>
+              </div>
+              <div class="stat">
+                <small>JOURNAL DAYS</small>
+                <strong id="dashJournal">01</strong>
+                <small>Entries in SQL store</small>
+              </div>
+            </div>
+            <div class="note">☀ You don't have to do everything today. Just the next useful thing.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:13px">
+              <button class="btn" data-goto="journal">Write a journal entry</button>
+              <button class="btn yellow" data-goto="events">Explore events</button>
+            </div>
+          </div>
+
+          <!-- Deadlines Panel -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Coming up next</h3>
+              <button class="tiny-link" data-goto="calendar">See all</button>
+            </div>
+            <div class="list" id="dashboardDeadlines"></div>
+          </div>
+
+          <!-- Gentle Plan Checklist -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Today's gentle plan</h3>
+              <span class="pill">CHECK IT OFF</span>
+            </div>
+            <div class="list" id="todayTasks">
+              <label class="list-row"><input type="checkbox"> <span><b>Review one lecture topic</b><small>Keep it to 25 focused minutes.</small></span></label>
+              <label class="list-row"><input type="checkbox"> <span><b>Check tomorrow's deadlines</b><small>Make a small plan before you log off.</small></span></label>
+              <label class="list-row"><input type="checkbox"> <span><b>Take a real break</b><small>Stretch, hydrate, breathe.</small></span></label>
+            </div>
+            <div class="note pink">A reminder: progress is not the same as perfection.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Academic Calendar Screen -->
+      <section class="screen" id="calendar">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">DATES, DEADLINES & LITTLE PLANS</div>
+            <h2>Academic calendar</h2>
+            <p>Browse months, select a date, and add your own deadline or event into the database.</p>
+          </div>
+          <button class="btn yellow" id="addCalendarEvent">＋ Add calendar item</button>
+        </div>
+
+        <div class="grid calendar-layout">
+          <div class="panel">
+            <div class="calendar-controls">
+              <button class="icon-btn" id="prevMonth" aria-label="Previous month">←</button>
+              <h3 id="monthTitle">October 2026</h3>
+              <button class="icon-btn" id="nextMonth" aria-label="Next month">→</button>
+            </div>
+            <div class="calendar" id="calendarGrid"></div>
+            <div class="clock-legend" style="display:flex;flex-wrap:wrap;margin-top:15px;gap:12px">
+              <div class="legend-item"><i class="swatch" style="background:#d99588"></i>Deadline</div>
+              <div class="legend-item"><i class="swatch" style="background:#e6c96e"></i>Event</div>
+              <div class="legend-item"><i class="swatch" style="background:#b2a5ce"></i>Exam</div>
+              <div class="legend-item"><i class="swatch" style="background:#9ebd8e"></i>Completed</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3 id="selectedDateTitle">Selected date</h3>
+              <span class="pill" id="selectedDateCount">0 ITEMS</span>
+            </div>
+            <div class="list" id="selectedDateItems"></div>
+            <div class="note blue">All additions and updates are persisted to the backend H2 SQL database table <code>calendar_items</code>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Campus Events Screen -->
+      <section class="screen" id="events">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">MEET PEOPLE, FIND YOUR THING</div>
+            <h2>Campus events</h2>
+            <p>Browse campus activities and register interest with live database updates.</p>
+          </div>
+          <button class="btn yellow" id="createEventBtn">＋ Add campus event</button>
+        </div>
+        <div class="note blue" style="margin:0 0 15px">Campus events stored and queried from the <code>campus_events</code> database table.</div>
+        <div class="grid three-col" id="eventCards"></div>
+      </section>
+
+      <!-- 4. Attendance Tracker Screen -->
+      <section class="screen" id="attendance">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">SHOW UP FOR YOUR FUTURE SELF</div>
+            <h2>Attendance tracker</h2>
+            <p>Record daily attendance (present/absent) to update your official subject totals.</p>
+          </div>
+          <button class="btn" id="recordAttendance">＋ Record attendance</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Subject-wise attendance</h3>
+            <span class="pill db-live">LIVE SQL SYNC</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Attended</th>
+                  <th>Conducted</th>
+                  <th>Attendance</th>
+                  <th>Indicator</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceRows"></tbody>
+            </table>
+          </div>
+          <div class="note">Regulation Threshold: Aim for 75%+ attendance across all subjects to maintain eligibility.</div>
+        </div>
+      </section>
+
+      <!-- 5. Syllabus Shelf Screen -->
+      <section class="screen" id="syllabus">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">ONE TOPIC AT A TIME</div>
+            <h2>Syllabus shelf</h2>
+            <p>Organise your subjects, unit progress and study milestones.</p>
+          </div>
+          <button class="btn yellow" id="addSubject">＋ Add subject</button>
+        </div>
+        <div class="note blue" style="margin:0 0 15px">Curriculum units mapped to CS23304 Java Programming and MIT Anna University syllabus.</div>
+        <div class="grid two-col" id="syllabusCards"></div>
+      </section>
+
+      <!-- 6. Marks & Assessments Screen -->
+      <section class="screen" id="marks">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">NOTICE YOUR PROGRESS</div>
+            <h2>Marks & assessments</h2>
+            <p>Record marks for assignments, quizzes, and lab exercises with database persistence.</p>
+          </div>
+          <button class="btn" id="addMark">＋ Add mark</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Assessment tracker</h3>
+            <span class="pill db-live">DATABASE PERSISTED</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Assessment</th>
+                  <th>Score</th>
+                  <th>Out of</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="marksRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Scrapbook Journal Screen -->
+      <section class="screen" id="journal">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">PAUSE · REFLECT · BEGIN AGAIN</div>
+            <h2>Your scrapbook journal</h2>
+            <p>A little paper corner for thoughts, memories and small wins.</p>
+          </div>
+          <button class="btn yellow" id="saveJournal">Save entry ♡</button>
+        </div>
+        <div class="grid two-col">
+          <div class="panel">
+            <div class="journal-paper">
+              <div class="eyebrow">TODAY'S PAGE · <span id="journalDate"></span></div>
+              <input id="journalTitle" value="A good day, in little ways" aria-label="Journal title">
+              <textarea id="journalText" placeholder="What happened today? What did you learn? What are you grateful for?">Today I showed up for myself. I can take one step at a time, and that still counts. ✿</textarea>
+              <div style="font:italic 13px Georgia,serif;color:#6c8990">“I am allowed to grow at my own pace.”</div>
+            </div>
+            <div style="margin-top:14px">
+              <div class="eyebrow" style="margin-bottom:9px">HOW ARE YOU FEELING?</div>
+              <div class="mood-row" id="moodRow">
+                <button class="mood" data-mood="😔">😔</button>
+                <button class="mood" data-mood="😐">😐</button>
+                <button class="mood active" data-mood="🙂">🙂</button>
+                <button class="mood" data-mood="😊">😊</button>
+                <button class="mood" data-mood="🌱">🌱</button>
+              </div>
+            </div>
+            <div class="note green" id="journalSaveState">Entries are permanently saved into the <code>journal_entries</code> table.</div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Pages from your semester</h3>
+              <span class="pill" id="journalCount">1 ENTRY</span>
+            </div>
+            <div id="journalEntries" class="list"></div>
+            <div class="note">Click "Open" on any past entry to reload it into your journal editor.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Student Profile Screen -->
+      <section class="screen" id="profile">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">MAKE THIS SPACE YOURS</div>
+            <h2>My student profile</h2>
+            <p>Update your academic details and avatar filter.</p>
+          </div>
+          <span class="pill db-live">SAVED TO DATABASE</span>
+        </div>
+
+        <div class="grid two-col">
+          <div class="panel">
+            <h3>Academic details</h3>
+            <div class="field">
+              <label>Display name</label>
+              <input id="profileName" value="Student">
+            </div>
+            <div class="field">
+              <label>Roll number</label>
+              <input id="profileRoll" value="DEMO-ROLL-001">
+            </div>
+            <div class="field">
+              <label>Department</label>
+              <select id="profileDept">
+                <option>Computer Technology</option>
+                <option>Computer Science and Engineering</option>
+                <option>Information Technology</option>
+                <option>Other / not specified</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Programme / degree</label>
+              <input id="profileProgramme" placeholder="B.Tech Computer Technology">
+            </div>
+            <div class="field">
+              <label>Semester</label>
+              <select id="profileSemester">
+                <option>1</option><option>2</option><option>3</option><option selected>4</option>
+                <option>5</option><option>6</option><option>7</option><option>8</option>
+              </select>
+            </div>
+            <button class="btn" id="saveProfile">Save profile in SQL database</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Photo-to-doodle profile</h3>
+              <span class="pill">CANVAS EFFECT</span>
+            </div>
+            <div class="photo-preview" id="avatarPreview">☺</div>
+            <div class="field">
+              <label>Choose a photo</label>
+              <input type="file" id="avatarUpload" accept="image/*">
+            </div>
+            <button class="btn yellow" id="doodleToggle">Apply doodle-inspired filter</button>
+            <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px">
+              Applies a high-contrast illustration-style doodle filter in the browser and saves state to your profile.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Admin Desk Screen -->
+      <section class="screen" id="admin">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">ADMINISTRATION & METRICS</div>
+            <h2>Academic data desk</h2>
+            <p>Live metrics and data oversight powered by Java JDBC queries.</p>
+          </div>
+          <span class="pill db-live">ADMIN INTERFACE</span>
+        </div>
+
+        <div class="grid three-col">
+          <div class="panel">
+            <h3>Calendar items</h3>
+            <strong style="font:700 30px Georgia,serif" id="adminCalendarCount">0</strong>
+            <p style="font-size:12px;color:var(--muted)">Active items in database</p>
+            <button class="btn" data-goto="calendar">Manage dates</button>
+          </div>
+          <div class="panel">
+            <h3>Campus events</h3>
+            <strong style="font:700 30px Georgia,serif" id="adminEventCount">0</strong>
+            <p style="font-size:12px;color:var(--muted)">Events in database</p>
+            <button class="btn" data-goto="events">Manage events</button>
+          </div>
+          <div class="panel">
+            <h3>Subjects</h3>
+            <strong style="font:700 30px Georgia,serif" id="adminSubjectCount">0</strong>
+            <p style="font-size:12px;color:var(--muted)">Curriculum subjects</p>
+            <button class="btn" data-goto="syllabus">Manage subjects</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:15px">
+          <h3>CS23304 Java Programming Syllabus Architecture</h3>
+          <div class="list">
+            <div class="list-row">
+              <span class="dot" style="background:#9ebd8e"></span>
+              <span>
+                <b>Unit I: Introduction to Java & Date/Time API</b>
+                <small>OOP encapsulation (<code>Student</code>, <code>Subject</code>), Constructors, and <code>java.time</code> API (<code>LocalDate</code>, <code>LocalDateTime</code>).</small>
+              </span>
+              <span class="tag green">IMPLEMENTED</span>
+            </div>
+            <div class="list-row">
+              <span class="dot" style="background:#9ebd8e"></span>
+              <span>
+                <b>Unit II: Polymorphism, Inheritance & Interfaces</b>
+                <small><code>Identifiable</code>, <code>Schedulable</code> interfaces; <code>BaseEntity</code>, <code>AcademicItem</code> abstract classes; Method overloading and overriding.</small>
+              </span>
+              <span class="tag green">IMPLEMENTED</span>
+            </div>
+            <div class="list-row">
+              <span class="dot" style="background:#9ebd8e"></span>
+              <span>
+                <b>Unit III: Exception Handling & Multithreading</b>
+                <small>Custom exceptions (<code>AcademicClockException</code>, <code>ResourceNotFoundException</code>) + <code>BackgroundScheduler</code> daemon thread with synchronization locks.</small>
+              </span>
+              <span class="tag green">IMPLEMENTED</span>
+            </div>
+            <div class="list-row">
+              <span class="dot" style="background:#9ebd8e"></span>
+              <span>
+                <b>Unit IV: Collections, Streams API & JDBC Database</b>
+                <small>Generic <code>CrudRepository&lt;T, ID&gt;</code>, Java Streams pipelines for averages and sorting, and embedded H2 SQL database via standard JDBC.</small>
+              </span>
+              <span class="tag green">IMPLEMENTED</span>
+            </div>
+            <div class="list-row">
+              <span class="dot" style="background:#9ebd8e"></span>
+              <span>
+                <b>Unit V: Web Development & REST Framework</b>
+                <small>Multi-threaded HTTP Server handling REST endpoints (<code>/api/overview</code>, <code>/api/attendance</code>, etc.) and serving responsive web assets.</small>
+              </span>
+              <span class="tag green">IMPLEMENTED</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. Login Screen -->
+      <section class="screen" id="login">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">YOUR SPACE, YOUR PACE</div>
+            <h2>Student & admin access</h2>
+            <p>Access your personalized academic space.</p>
+          </div>
+        </div>
+
+        <div class="login-wrap">
+          <div class="login-art">
+            <div class="brand-icon" style="background:#fff8df">◷</div>
+            <h3>One calm place<br>for your campus life.</h3>
+            <p style="line-height:1.7;font-size:13px">Plan your semester, keep track of the little things, and leave a page for yourself at the end of the day.</p>
+            <span class="pill" style="align-self:flex-start">MIT ACADEMIC CLOCK</span>
+          </div>
+
+          <div class="login-card">
+            <div class="tabs" style="display:flex;gap:7px;margin-bottom:16px">
+              <button class="btn" id="studentTab">Student login</button>
+              <button class="btn ghost" id="adminTab">Admin demo</button>
+            </div>
+            <h3 id="loginHeading">Welcome back ♡</h3>
+            <p style="font-size:12px;color:var(--muted);line-height:1.6" id="loginDesc">Access your student dashboard and academic schedule.</p>
+            <div class="field">
+              <label id="loginIdLabel">Roll number</label>
+              <input id="loginId" value="DEMO-ROLL-001">
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input id="loginPassword" type="password" value="cs23304">
+            </div>
+            <button class="btn" style="width:100%" id="loginSubmit">Continue to dashboard →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        MIT Academic Clock · Full-Stack Java Platform with Embedded H2 Database · CS23304
+      </footer>
+    </main>
+  </div>
+
+  <!-- Reusable Dynamic Modal Dialog -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <h3 id="modalTitle">Add item</h3>
+        <button class="icon-btn" id="closeModal" aria-label="Close">✕</button>
+      </div>
+      <form id="modalForm">
+        <div id="modalFields"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+          <button type="button" class="btn ghost" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn yellow">Save to Database</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Client-side Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

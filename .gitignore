@@ -1,0 +1,27 @@
+# Compiled classes
+bin/
+target/
+*.class
+
+# Build artifacts and temp files
+sources.txt
+sources_raw.txt
+*.log
+
+# Database runtime files
+data/*.mv.db
+data/*.db
+data/*.trace.db
+data/*.lock.db
+
+# IDE configuration
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS specific
+.DS_Store
+Thumbs.db
