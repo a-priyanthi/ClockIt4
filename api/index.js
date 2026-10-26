@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     } catch (e) {
       body = {};
     }
-  } else if (!req.body && method !== 'GET' && method !== 'HEAD') {
+  } else if (!req.body && method !== 'GET' && method !== 'HEAD' && typeof req.on === 'function') {
     body = await new Promise((resolve) => {
       let data = '';
       req.on('data', chunk => { data += chunk; });
@@ -170,11 +170,11 @@ module.exports = async (req, res) => {
       return res.status(201).json(newSub);
     }
     if (path.startsWith('/subjects/') && (method === 'PUT' || method === 'POST')) {
-      const code = decodeURIComponent(path.substring('/subjects/'.length()));
+      const code = decodeURIComponent(path.substring('/subjects/'.length));
       const sub = db.subjects.find(s => s.code.toUpperCase() === code.toUpperCase());
       if (sub) {
         if (body.name) sub.name = body.name;
-        if (body.units) sub.units = parseInt(body.units, 10);
+        if (body.units !== undefined) sub.units = parseInt(body.units, 10);
         if (body.progress !== undefined) sub.progress = parseInt(body.progress, 10);
         return res.status(200).json(sub);
       }
@@ -209,7 +209,7 @@ module.exports = async (req, res) => {
       return res.status(201).json(newItem);
     }
     if (path.startsWith('/calendar/') && method === 'DELETE') {
-      const id = decodeURIComponent(path.substring('/calendar/'.length()));
+      const id = decodeURIComponent(path.substring('/calendar/'.length));
       db.calendar = db.calendar.filter(c => c.id !== id);
       return res.status(200).json({ success: true, calendar: db.calendar });
     }
@@ -258,7 +258,7 @@ module.exports = async (req, res) => {
       return res.status(201).json(newMark);
     }
     if (path.startsWith('/marks/') && method === 'DELETE') {
-      const id = decodeURIComponent(path.substring('/marks/'.length()));
+      const id = decodeURIComponent(path.substring('/marks/'.length));
       db.marks = db.marks.filter(m => m.id !== id);
       return res.status(200).json({ success: true, marks: db.marks });
     }
