@@ -1,0 +1,19 @@
+{
+  "name": "clockit",
+  "version": "1.0.0",
+  "description": "ClockIt — Academic Calendar & Study Space for Anna University MIT Campus",
+  "main": "api/index.js",
+  "scripts": {
+    "test": "node test-all.js"
+  },
+  "keywords": [
+    "academic-calendar",
+    "clockit",
+    "anna-university",
+    "mit-campus",
+    "semester-3",
+    "exam-timetable"
+  ],
+  "author": "Priyanthi A",
+  "license": "MIT"
+}
