@@ -1,5 +1,5 @@
 /**
- * MIT Academic Clock - REST API Client
+ * ClockIt - REST API Client
  * Connects frontend interactions directly to the Java Backend and H2 SQL Database.
  */
 const API = {
@@ -27,6 +27,25 @@ const API = {
       console.error(`[API Error] ${options.method || 'GET'} ${url}:`, err.message);
       throw err;
     }
+  },
+
+  // Authentication & Registration
+  registerOrSignIn(studentData) {
+    return this.request('/auth/signin', {
+      method: 'POST',
+      body: JSON.stringify(studentData)
+    });
+  },
+
+  login(credentials) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  },
+
+  getAuthMe() {
+    return this.request('/auth/me');
   },
 
   // Overview

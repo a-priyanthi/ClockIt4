@@ -127,6 +127,7 @@ public class SimpleJson {
             m.put("department", s.getDepartment());
             m.put("programme", s.getProgramme());
             m.put("semester", s.getSemester());
+            m.put("gender", s.getGender());
             m.put("avatarUrl", s.getAvatarUrl());
             m.put("doodleApplied", s.isDoodleApplied());
             return toJson(m);

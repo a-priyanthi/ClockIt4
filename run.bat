@@ -1,7 +1,7 @@
 @echo off
 echo ==========================================================
-echo  MIT ACADEMIC CLOCK -- FULLSTACK JAVA PLATFORM
-echo  Course: CS23304 Java Programming Capstone
+echo  CLOCKIT -- ACADEMIC CALENDAR & STUDY SPACE
+echo  Anna University / MIT Campus Regulations 2023
 echo ==========================================================
 
 REM Check if compiled classes exist, otherwise build
@@ -15,7 +15,7 @@ if not exist bin\edu\mit\academicclock\Main.class (
     )
 )
 
-echo [INFO] Starting Java Academic Clock Server on port 8080...
+echo [INFO] Starting ClockIt Server on port 8080...
 echo [INFO] Opening http://localhost:8080 in your browser...
 start http://localhost:8080
 

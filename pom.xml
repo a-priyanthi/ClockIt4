@@ -6,12 +6,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.mit</groupId>
-    <artifactId>academic-clock</artifactId>
+    <artifactId>clockit</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>MIT Academic Clock — Interactive Platform</name>
-    <description>CS23304 Java Programming Capstone: Academic Clock with Embedded SQL Database, JDBC, Multithreading, and Modern Web UI</description>
+    <name>ClockIt — Academic Calendar &amp; Study Space</name>
+    <description>ClockIt: Academic Calendar &amp; Study Space with Embedded SQL Database, JDBC, Multithreading, and Modern Web UI</description>
 
     <properties>
         <java.version>17</java.version>

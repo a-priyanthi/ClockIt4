@@ -41,7 +41,7 @@ public class HttpRouter {
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
-        System.out.println("✨ Academic Clock Server running at: http://localhost:" + port);
+        System.out.println("✨ ClockIt Server running at: http://localhost:" + port);
         System.out.println("   - REST API Root: http://localhost:" + port + "/api/overview");
         System.out.println("   - Interactive Frontend: http://localhost:" + port + "/");
     }
@@ -49,7 +49,7 @@ public class HttpRouter {
     public void stop() {
         if (server != null) {
             server.stop(1);
-            System.out.println("Academic Clock Server stopped.");
+            System.out.println("ClockIt Server stopped.");
         }
     }
 

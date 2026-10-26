@@ -27,7 +27,9 @@ public class DatabaseInitializer {
                     name VARCHAR(128) NOT NULL,
                     department VARCHAR(128),
                     programme VARCHAR(128),
-                    semester INT DEFAULT 1,
+                    semester INT DEFAULT 3,
+                    gender VARCHAR(32) DEFAULT 'Female',
+                    password VARCHAR(128) DEFAULT 'clockit2026',
                     avatar_url CLOB,
                     is_doodle BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -35,13 +37,17 @@ public class DatabaseInitializer {
                 );
             """);
 
+            // Migration safeguards for existing DB
+            stmt.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(32) DEFAULT 'Female';");
+            stmt.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS password VARCHAR(128) DEFAULT 'clockit2026';");
+
             // 2. Subjects Table
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS subjects (
                     id VARCHAR(64) PRIMARY KEY,
                     code VARCHAR(32) UNIQUE NOT NULL,
                     name VARCHAR(128) NOT NULL,
-                    units INT DEFAULT 4,
+                    units INT DEFAULT 5,
                     progress INT DEFAULT 0,
                     attended INT DEFAULT 0,
                     total INT DEFAULT 0,
@@ -117,123 +123,222 @@ public class DatabaseInitializer {
                 );
             """);
 
-            System.out.println("✅ Database schema initialized successfully.");
-            seedIfEmpty(conn);
+            System.out.println("✅ ClockIt database schema initialized successfully.");
+            seedOrUpgrade(conn);
 
         } catch (SQLException e) {
             throw new DatabaseOperationException("Failed to initialize database tables: " + e.getMessage(), e);
         }
     }
 
-    private static void seedIfEmpty(Connection conn) throws SQLException {
+    private static void seedOrUpgrade(Connection conn) throws SQLException {
+        // 1. Seed or update primary student profile
+        upsertStudent(conn, "std-priyanthi-01", "2023506001", "Priyanthi A", "Computer Technology", "B.E. Computer Science and Engineering", 3, "Female", "clockit2026");
+        upsertStudent(conn, "std-demo-01", "DEMO-ROLL-001", "Student", "Computer Technology", "B.E. Computer Science and Engineering", 3, "Female", "clockit2026");
+
+        // 2. Seed official Anna University / MIT Campus Semester 3 CSE/CT Curriculum Subjects
+        upsertSubject(conn, "MA23C05", "Probability and Statistics", 5, 65, 18, 20);
+        upsertSubject(conn, "CS23301", "Software Engineering", 5, 50, 19, 20);
+        upsertSubject(conn, "CS23302", "Data Structures", 5, 70, 17, 20);
+        upsertSubject(conn, "CS23303", "Digital System Design", 5, 55, 16, 20);
+        upsertSubject(conn, "CS23304", "Java Programming", 5, 80, 19, 20);
+        upsertSubject(conn, "CS23U01", "Standards - Computer Science & Engg.", 2, 85, 9, 10);
+        upsertSubject(conn, "UC23U01", "Universal Human Values", 5, 90, 10, 10);
+
+        // 3. Seed official Anna University MIT Campus End Semester Examination Timetable (Nov/Dec 2026)
+        upsertCalendar(conn, "cal-01", "Examination Timetable Published", "2026-10-22", "event", "Anna University Office of Additional Controller of Examinations");
+        upsertCalendar(conn, "cal-02", "Internal Assessment 2 & Attendance Freeze", "2026-10-28", "deadline", "Final eligibility list publication · min 75% attendance");
+        upsertCalendar(conn, "cal-03", "Hall Ticket Distribution & Model Lab Reviews", "2026-11-05", "deadline", "Collect signed hall tickets from Department Advisor");
+
+        // Official End Semester Exam Timetable:
+        upsertCalendar(conn, "cal-exam-01", "End Sem: MA23C05 Probability & Statistics", "2026-11-11", "exam", "FN (10:00 AM – 01:00 PM) · MIT Chromepet Campus · Reg 2023");
+        upsertCalendar(conn, "cal-exam-02", "End Sem: CS23304 Java Programming", "2026-11-14", "exam", "FN (10:00 AM – 01:00 PM) · MIT Chromepet Campus · Reg 2023");
+        upsertCalendar(conn, "cal-exam-03", "End Sem: CS23303 Digital System Design", "2026-11-18", "exam", "AN (02:00 PM – 05:00 PM) · MIT Chromepet Campus · Reg 2023");
+        upsertCalendar(conn, "cal-exam-04", "End Sem: CS23302 Data Structures", "2026-11-25", "exam", "AN (02:00 PM – 05:00 PM) · MIT Chromepet Campus · Reg 2023");
+        upsertCalendar(conn, "cal-exam-05", "End Sem: CS23301 Software Engineering", "2026-11-30", "exam", "FN (10:00 AM – 01:00 PM) · MIT Chromepet Campus · Reg 2023");
+
+        upsertCalendar(conn, "cal-04", "End Sem Practical Lab Examinations", "2026-12-04", "exam", "CS23304 Java Programming & CS23302 Data Structures Lab");
+        upsertCalendar(conn, "cal-05", "Winter Break & Semester 4 Reopening Prep", "2026-12-15", "event", "Campus reopening notice for academic year 2026–2027");
+
+        // 4. Seed Campus Events
+        upsertEvent(conn, "evt-01", "Student Tech Meetup", "TECH TALK", "2026-10-25", "4:00 PM", "Rajam Hall, MIT Campus", "Talks, coding demos and peer tech discussions on full-stack Java development.", false);
+        upsertEvent(conn, "evt-02", "End-Sem Java & DSA Peer Study Sprint", "WORKSHOP", "2026-11-06", "10:00 AM", "Computer Tech Lab 2, MIT", "Focused peer revision on Unit I–V concepts, multithreading, and trees.", true);
+        upsertEvent(conn, "evt-03", "Creative Club Afternoon", "CAMPUS LIFE", "2026-11-12", "3:00 PM", "Hostel Quadrangle / Open Air", "A calm study-break corner with music, sketching, and chai before exams.", false);
+
+        // 5. Seed Marks
+        upsertMark(conn, "mrk-01", "Probability and Statistics", "Assessment 1 (Written)", 18.5, 20);
+        upsertMark(conn, "mrk-02", "Java Programming", "Lab Assessment (JDBC & Concurrency)", 19.0, 20);
+        upsertMark(conn, "mrk-03", "Data Structures", "Quiz 1 (Binary Trees)", 17.5, 20);
+        upsertMark(conn, "mrk-04", "Digital System Design", "Class Test (Sequential Logic)", 16.0, 20);
+        upsertMark(conn, "mrk-05", "Software Engineering", "SRS & Agile Sprint Review", 18.0, 20);
+
+        // 6. Seed Journal Entry
         try (Statement stmt = conn.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS cnt FROM students");
-            if (rs.next() && rs.getInt("cnt") == 0) {
-                System.out.println("🌱 Seeding database with MIT Chennai academic prototype data...");
-
-                // 1. Seed Student
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO students (id, roll_number, name, department, programme, semester) VALUES (?, ?, ?, ?, ?, ?)")) {
-                    ps.setString(1, "std-demo-01");
-                    ps.setString(2, "DEMO-ROLL-001");
-                    ps.setString(3, "Student");
-                    ps.setString(4, "Computer Technology");
-                    ps.setString(5, "B.Tech Computer Technology");
-                    ps.setInt(6, 4);
-                    ps.executeUpdate();
-                }
-
-                // 2. Seed Subjects
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO subjects (id, code, name, units, progress, attended, total) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-                    insertSubject(ps, "sub-01", "SUB-01", "Data Structures", 5, 60, 18, 20);
-                    insertSubject(ps, "sub-02", "SUB-02", "Programming", 5, 45, 16, 20);
-                    insertSubject(ps, "sub-03", "SUB-03", "Mathematics", 4, 75, 17, 20);
-                    insertSubject(ps, "sub-04", "SUB-04", "Digital Systems", 5, 35, 15, 20);
-                    insertSubject(ps, "sub-05", "SUB-05", "Communication Skills", 3, 80, 18, 20);
-                }
-
-                // 3. Seed Calendar Items
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO calendar_items (id, title, item_date, item_type, detail) VALUES (?, ?, ?, ?, ?)")) {
-                    insertCalendar(ps, "cal-01", "Data Structures assignment", "2026-10-22", "deadline", "Demo due date · 11:59 PM");
-                    insertCalendar(ps, "cal-02", "Student tech meetup", "2026-10-25", "event", "Demo event · MIT campus (unverified)");
-                    insertCalendar(ps, "cal-03", "Lab revision reminder", "2026-10-28", "exam", "Personal planning reminder · not an official exam");
-                    insertCalendar(ps, "cal-04", "Lab record check", "2026-11-03", "deadline", "Sample deadline · update from your faculty notice");
-                    insertCalendar(ps, "cal-05", "Creative club afternoon", "2026-11-06", "event", "Demo event · location to be confirmed");
-                }
-
-                // 4. Seed Campus Events
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO campus_events (id, title, category, event_date, event_time, venue, description, is_registered) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
-                    insertEvent(ps, "evt-01", "Student Tech Meetup", "TECH TALK", "2026-10-25", "4:00 PM", "Location to be confirmed", "A sample event card for talks, demos and student conversations.", false);
-                    insertEvent(ps, "evt-02", "Web Dev Workshop", "WORKSHOP", "2026-11-05", "10:00 AM", "Venue to be confirmed", "A demo workshop listing. Verify organiser details before using.", false);
-                    insertEvent(ps, "evt-03", "Creative Club Afternoon", "CAMPUS LIFE", "2026-11-12", "3:00 PM", "Location to be confirmed", "A relaxed sample listing for creative activities and meeting people.", false);
-                }
-
-                // 5. Seed Marks
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO assessment_marks (id, subject, assessment, score, out_of) VALUES (?, ?, ?, ?, ?)")) {
-                    insertMark(ps, "mrk-01", "Data Structures", "Assignment 1", 18, 20);
-                    insertMark(ps, "mrk-02", "Programming", "Lab exercise", 16, 20);
-                    insertMark(ps, "mrk-03", "Mathematics", "Quiz 1", 17, 20);
-                    insertMark(ps, "mrk-04", "Digital Systems", "Class test", 15, 20);
-                }
-
-                // 6. Seed Journal Entry
+            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM journal_entries");
+            if (rs.next() && rs.getInt(1) == 0) {
                 try (PreparedStatement ps = conn.prepareStatement(
                         "INSERT INTO journal_entries (id, title, content, mood, entry_date) VALUES (?, ?, ?, ?, ?)")) {
                     ps.setString(1, "jrn-01");
-                    ps.setString(2, "A good day, in little ways");
-                    ps.setString(3, "Today I showed up for myself. I can take one step at a time, and that still counts. ✿");
-                    ps.setString(4, "🙂");
-                    ps.setDate(5, java.sql.Date.valueOf("2026-10-20"));
+                    ps.setString(2, "End-Sem Preparation & Small Steps");
+                    ps.setString(3, "The exam schedule is out for November 2026. Starting revision with Probability & Statistics and Java Programming. One day at a time. ✿");
+                    ps.setString(4, "🌱");
+                    ps.setDate(5, java.sql.Date.valueOf("2026-10-22"));
                     ps.executeUpdate();
                 }
-
-                System.out.println("✨ Academic Clock database seeded successfully.");
             }
+        }
+
+        System.out.println("✨ ClockIt database seeded with official Semester 3 syllabus & exam schedule.");
+    }
+
+    private static void upsertStudent(Connection conn, String id, String roll, String name, String dept, String prog, int sem, String gender, String pass) throws SQLException {
+        String check = "SELECT id FROM students WHERE roll_number = ? OR id = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(check)) {
+            ps.setString(1, roll);
+            ps.setString(2, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String existingId = rs.getString("id");
+                    String update = "UPDATE students SET roll_number = ?, name = ?, department = ?, programme = ?, semester = ?, gender = ?, password = ? WHERE id = ?;";
+                    try (PreparedStatement ups = conn.prepareStatement(update)) {
+                        ups.setString(1, roll);
+                        ups.setString(2, name);
+                        ups.setString(3, dept);
+                        ups.setString(4, prog);
+                        ups.setInt(5, sem);
+                        ups.setString(6, gender);
+                        ups.setString(7, pass);
+                        ups.setString(8, existingId);
+                        ups.executeUpdate();
+                    }
+                    return;
+                }
+            }
+        }
+        String insert = "INSERT INTO students (id, roll_number, name, department, programme, semester, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+        try (PreparedStatement ips = conn.prepareStatement(insert)) {
+            ips.setString(1, id);
+            ips.setString(2, roll);
+            ips.setString(3, name);
+            ips.setString(4, dept);
+            ips.setString(5, prog);
+            ips.setInt(6, sem);
+            ips.setString(7, gender);
+            ips.setString(8, pass);
+            ips.executeUpdate();
         }
     }
 
-    private static void insertSubject(PreparedStatement ps, String id, String code, String name, int units, int progress, int attended, int total) throws SQLException {
-        ps.setString(1, id);
-        ps.setString(2, code);
-        ps.setString(3, name);
-        ps.setInt(4, units);
-        ps.setInt(5, progress);
-        ps.setInt(6, attended);
-        ps.setInt(7, total);
-        ps.executeUpdate();
+    private static void upsertSubject(Connection conn, String code, String name, int units, int progress, int attended, int total) throws SQLException {
+        String check = "SELECT id FROM subjects WHERE code = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(check)) {
+            ps.setString(1, code);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String existingId = rs.getString("id");
+                    String update = "UPDATE subjects SET name = ?, units = ?, progress = ? WHERE id = ?;";
+                    try (PreparedStatement ups = conn.prepareStatement(update)) {
+                        ups.setString(1, name);
+                        ups.setInt(2, units);
+                        ups.setInt(3, progress);
+                        ups.setString(4, existingId);
+                        ups.executeUpdate();
+                    }
+                    return;
+                }
+            }
+        }
+        String insert = "INSERT INTO subjects (id, code, name, units, progress, attended, total) VALUES (?, ?, ?, ?, ?, ?, ?);";
+        try (PreparedStatement ips = conn.prepareStatement(insert)) {
+            ips.setString(1, "sub-" + code.toLowerCase());
+            ips.setString(2, code);
+            ips.setString(3, name);
+            ips.setInt(4, units);
+            ips.setInt(5, progress);
+            ips.setInt(6, attended);
+            ips.setInt(7, total);
+            ips.executeUpdate();
+        }
     }
 
-    private static void insertCalendar(PreparedStatement ps, String id, String title, String date, String type, String detail) throws SQLException {
-        ps.setString(1, id);
-        ps.setString(2, title);
-        ps.setDate(3, java.sql.Date.valueOf(date));
-        ps.setString(4, type);
-        ps.setString(5, detail);
-        ps.executeUpdate();
+    private static void upsertCalendar(Connection conn, String id, String title, String date, String type, String detail) throws SQLException {
+        String check = "SELECT id FROM calendar_items WHERE id = ? OR (item_date = ? AND title = ?);";
+        try (PreparedStatement ps = conn.prepareStatement(check)) {
+            ps.setString(1, id);
+            ps.setDate(2, java.sql.Date.valueOf(date));
+            ps.setString(3, title);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String existingId = rs.getString("id");
+                    String update = "UPDATE calendar_items SET title = ?, item_date = ?, item_type = ?, detail = ? WHERE id = ?;";
+                    try (PreparedStatement ups = conn.prepareStatement(update)) {
+                        ups.setString(1, title);
+                        ups.setDate(2, java.sql.Date.valueOf(date));
+                        ups.setString(3, type);
+                        ups.setString(4, detail);
+                        ups.setString(5, existingId);
+                        ups.executeUpdate();
+                    }
+                    return;
+                }
+            }
+        }
+        String insert = "INSERT INTO calendar_items (id, title, item_date, item_type, detail) VALUES (?, ?, ?, ?, ?);";
+        try (PreparedStatement ips = conn.prepareStatement(insert)) {
+            ips.setString(1, id);
+            ips.setString(2, title);
+            ips.setDate(3, java.sql.Date.valueOf(date));
+            ips.setString(4, type);
+            ips.setString(5, detail);
+            ips.executeUpdate();
+        }
     }
 
-    private static void insertEvent(PreparedStatement ps, String id, String title, String category, String date, String time, String venue, String desc, boolean registered) throws SQLException {
-        ps.setString(1, id);
-        ps.setString(2, title);
-        ps.setString(3, category);
-        ps.setDate(4, java.sql.Date.valueOf(date));
-        ps.setString(5, time);
-        ps.setString(6, venue);
-        ps.setString(7, desc);
-        ps.setBoolean(8, registered);
-        ps.executeUpdate();
+    private static void upsertEvent(Connection conn, String id, String title, String category, String date, String time, String venue, String desc, boolean registered) throws SQLException {
+        String check = "SELECT id FROM campus_events WHERE id = ? OR title = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(check)) {
+            ps.setString(1, id);
+            ps.setString(2, title);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return;
+                }
+            }
+        }
+        String insert = "INSERT INTO campus_events (id, title, category, event_date, event_time, venue, description, is_registered) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+        try (PreparedStatement ips = conn.prepareStatement(insert)) {
+            ips.setString(1, id);
+            ips.setString(2, title);
+            ips.setString(3, category);
+            ips.setDate(4, java.sql.Date.valueOf(date));
+            ips.setString(5, time);
+            ips.setString(6, venue);
+            ips.setString(7, desc);
+            ips.setBoolean(8, registered);
+            ips.executeUpdate();
+        }
     }
 
-    private static void insertMark(PreparedStatement ps, String id, String subject, String assessment, double score, double outOf) throws SQLException {
-        ps.setString(1, id);
-        ps.setString(2, subject);
-        ps.setString(3, assessment);
-        ps.setDouble(4, score);
-        ps.setDouble(5, outOf);
-        ps.executeUpdate();
+    private static void upsertMark(Connection conn, String id, String subject, String assessment, double score, double outOf) throws SQLException {
+        String check = "SELECT id FROM assessment_marks WHERE id = ? OR (subject = ? AND assessment = ?);";
+        try (PreparedStatement ps = conn.prepareStatement(check)) {
+            ps.setString(1, id);
+            ps.setString(2, subject);
+            ps.setString(3, assessment);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return;
+                }
+            }
+        }
+        String insert = "INSERT INTO assessment_marks (id, subject, assessment, score, out_of) VALUES (?, ?, ?, ?, ?);";
+        try (PreparedStatement ips = conn.prepareStatement(insert)) {
+            ips.setString(1, id);
+            ips.setString(2, subject);
+            ips.setString(3, assessment);
+            ips.setDouble(4, score);
+            ips.setDouble(5, outOf);
+            ips.executeUpdate();
+        }
     }
 }

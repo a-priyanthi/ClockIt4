@@ -85,6 +85,12 @@ public class ApiHandlers {
                 sendJsonResponse(exchange, 200, service.getStudentProfile().orElse(new Student()));
             } else if (path.equals("/api/profile") && method.equals("POST")) {
                 handleUpdateProfile(exchange);
+            } else if ((path.equals("/api/auth/signin") || path.equals("/api/auth/register")) && method.equals("POST")) {
+                handleAuthRegisterOrSignIn(exchange);
+            } else if (path.equals("/api/auth/login") && method.equals("POST")) {
+                handleAuthLogin(exchange);
+            } else if (path.equals("/api/auth/me") && method.equals("GET")) {
+                sendJsonResponse(exchange, 200, service.getStudentProfile().orElse(new Student()));
             } else if (path.equals("/api/admin/stats") && method.equals("GET")) {
                 sendJsonResponse(exchange, 200, service.getAdminStats());
             } else if (path.equals("/api/search")) {
@@ -226,6 +232,32 @@ public class ApiHandlers {
         sendJsonResponse(exchange, 201, saved);
     }
 
+    private void handleAuthRegisterOrSignIn(HttpExchange exchange) throws IOException {
+        Map<String, String> data = SimpleJson.parseObject(readBody(exchange));
+        String name = data.getOrDefault("name", "Student");
+        String rollNumber = data.getOrDefault("rollNumber", data.getOrDefault("roll_number", ""));
+        String department = data.getOrDefault("department", "Computer Technology");
+        int semester = parseInt(data.get("semester"), 3);
+        String gender = data.getOrDefault("gender", "Female");
+        String password = data.getOrDefault("password", "clockit2026");
+
+        Student student = service.registerOrSignIn(name, rollNumber, department, semester, gender, password);
+        sendJsonResponse(exchange, 200, student);
+    }
+
+    private void handleAuthLogin(HttpExchange exchange) throws IOException {
+        Map<String, String> data = SimpleJson.parseObject(readBody(exchange));
+        String rollNumber = data.getOrDefault("rollNumber", data.getOrDefault("roll_number", ""));
+        String password = data.getOrDefault("password", "");
+
+        java.util.Optional<Student> studentOpt = service.authenticate(rollNumber, password);
+        if (studentOpt.isPresent()) {
+            sendJsonResponse(exchange, 200, studentOpt.get());
+        } else {
+            sendErrorResponse(exchange, 401, "Invalid Roll Number or Password");
+        }
+    }
+
     private void handleUpdateProfile(HttpExchange exchange) throws IOException {
         String body = readBody(exchange);
         Map<String, String> data = SimpleJson.parseObject(body);
@@ -234,7 +266,11 @@ public class ApiHandlers {
         s.setRollNumber(data.get("rollNumber"));
         s.setDepartment(data.get("department"));
         s.setProgramme(data.get("programme"));
-        s.setSemester(parseInt(data.get("semester"), 1));
+        s.setSemester(parseInt(data.get("semester"), 3));
+        s.setGender(data.getOrDefault("gender", "Female"));
+        if (data.containsKey("password") && !data.get("password").isBlank()) {
+            s.setPassword(data.get("password"));
+        }
         s.setAvatarUrl(data.get("avatarUrl"));
         s.setDoodleApplied("true".equalsIgnoreCase(data.get("doodleApplied")));
 

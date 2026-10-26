@@ -29,8 +29,8 @@ import java.io.File;
 public class Main {
     public static void main(String[] args) {
         System.out.println("==========================================================");
-        System.out.println("🎓 MIT ACADEMIC CLOCK — FULLSTACK JAVA PLATFORM");
-        System.out.println("   Course: CS23304 Java Programming Capstone");
+        System.out.println("⏰ CLOCKIT — ACADEMIC CALENDAR & STUDY SPACE");
+        System.out.println("   Powered by Java, Embedded H2 SQL & Anna University Curriculum");
         System.out.println("==========================================================");
 
         try {
@@ -77,10 +77,10 @@ public class Main {
 
             // 6. Graceful JVM Shutdown Hook
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("\nStopping Academic Clock services...");
+                System.out.println("\nStopping ClockIt services...");
                 scheduler.stop();
                 router.stop();
-                System.out.println("Goodbye! ✿");
+                System.out.println("Goodbye from ClockIt! ✿");
             }));
 
         } catch (Exception e) {

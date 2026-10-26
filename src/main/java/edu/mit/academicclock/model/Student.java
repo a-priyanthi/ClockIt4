@@ -9,20 +9,26 @@ public class Student extends BaseEntity {
     private String department;
     private String programme;
     private int semester;
+    private String gender;
+    private String password;
     private String avatarUrl;
     private boolean doodleApplied;
 
     public Student() {
         super();
+        this.gender = "Female";
+        this.password = "clockit2026";
     }
 
-    public Student(String id, String rollNumber, String name, String department, String programme, int semester) {
+    public Student(String id, String rollNumber, String name, String department, String programme, int semester, String gender, String password) {
         super(id);
         this.rollNumber = rollNumber;
         this.name = name;
         this.department = department;
         this.programme = programme;
         this.semester = semester;
+        this.gender = gender != null ? gender : "Female";
+        this.password = password != null ? password : "clockit2026";
         this.doodleApplied = false;
     }
 
@@ -64,6 +70,22 @@ public class Student extends BaseEntity {
 
     public void setSemester(int semester) {
         this.semester = semester;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getAvatarUrl() {

@@ -209,20 +209,63 @@ public class AcademicService {
         return journalRepo.save(entry);
     }
 
-    // 8. Student Profile Operations
+    // 8. Student Profile & Authentication Operations
     public Optional<Student> getStudentProfile() {
         return studentRepo.getPrimaryStudent();
     }
 
+    public Student registerOrSignIn(String name, String rollNumber, String department, int semester, String gender, String password) {
+        if (rollNumber == null || rollNumber.isBlank()) {
+            throw new ValidationException("Roll number is required");
+        }
+        if (name == null || name.isBlank()) {
+            throw new ValidationException("Student name is required");
+        }
+
+        Optional<Student> existingOpt = studentRepo.findByRollNumber(rollNumber.trim());
+        Student student = existingOpt.orElseGet(() -> new Student(
+                "std-" + System.currentTimeMillis(),
+                rollNumber.trim(),
+                name.trim(),
+                department != null ? department.trim() : "Computer Technology",
+                "B.E. Computer Science and Engineering",
+                semester > 0 ? semester : 3,
+                gender != null ? gender.trim() : "Female",
+                password != null ? password.trim() : "clockit2026"
+        ));
+
+        student.setName(name.trim());
+        student.setRollNumber(rollNumber.trim());
+        if (department != null && !department.isBlank()) student.setDepartment(department.trim());
+        if (semester > 0) student.setSemester(semester);
+        if (gender != null && !gender.isBlank()) student.setGender(gender.trim());
+        if (password != null && !password.isBlank()) student.setPassword(password.trim());
+
+        return studentRepo.save(student);
+    }
+
+    public Optional<Student> authenticate(String rollNumber, String password) {
+        if (rollNumber == null || rollNumber.isBlank()) {
+            throw new ValidationException("Roll number is required to sign in");
+        }
+        return studentRepo.authenticate(rollNumber.trim(), password);
+    }
+
     public Student updateStudentProfile(Student updated) {
-        Optional<Student> current = studentRepo.getPrimaryStudent();
+        Optional<Student> current = studentRepo.findByRollNumber(updated.getRollNumber());
+        if (current.isEmpty()) {
+            current = studentRepo.getPrimaryStudent();
+        }
+
         if (current.isPresent()) {
             Student s = current.get();
             if (updated.getName() != null && !updated.getName().isBlank()) s.setName(updated.getName());
             if (updated.getRollNumber() != null && !updated.getRollNumber().isBlank()) s.setRollNumber(updated.getRollNumber());
-            if (updated.getDepartment() != null) s.setDepartment(updated.getDepartment());
-            if (updated.getProgramme() != null) s.setProgramme(updated.getProgramme());
+            if (updated.getDepartment() != null && !updated.getDepartment().isBlank()) s.setDepartment(updated.getDepartment());
+            if (updated.getProgramme() != null && !updated.getProgramme().isBlank()) s.setProgramme(updated.getProgramme());
             if (updated.getSemester() > 0) s.setSemester(updated.getSemester());
+            if (updated.getGender() != null && !updated.getGender().isBlank()) s.setGender(updated.getGender());
+            if (updated.getPassword() != null && !updated.getPassword().isBlank()) s.setPassword(updated.getPassword());
             if (updated.getAvatarUrl() != null) s.setAvatarUrl(updated.getAvatarUrl());
             s.setDoodleApplied(updated.isDoodleApplied());
             return studentRepo.save(s);

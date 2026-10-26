@@ -1,6 +1,7 @@
 /**
- * MIT Academic Clock — Application Controller
+ * ClockIt — Application Controller
  * Synchronized with Java REST API & H2 SQL Database.
+ * Anna University / MIT Campus Regulations 2023 (Semester 3 CSE/CT)
  */
 
 const $ = s => document.querySelector(s);
@@ -8,24 +9,22 @@ const $$ = s => [...document.querySelectorAll(s)];
 
 const titles = {
   dashboard: 'Your academic overview',
-  calendar: 'Academic calendar',
-  events: 'Campus events',
+  calendar: 'Academic calendar & Exam timetable',
+  events: 'Campus events & Study sprints',
   attendance: 'Attendance tracker',
   syllabus: 'Syllabus shelf',
   marks: 'Marks & assessments',
   journal: 'Your scrapbook journal',
   profile: 'My student profile',
-  admin: 'Academic data desk',
-  login: 'Student & admin access'
+  admin: 'Academic data desk'
 };
 
 // Application State (populated via live Java Database API)
 let currentScreen = 'dashboard';
-let calendarDate = new Date(2026, 9, 1); // October 2026
-let selectedDate = '2026-10-20';
-let selectedMood = '🙂';
+let calendarDate = new Date(2026, 10, 1); // November 2026 (End-Sem exam month)
+let selectedDate = '2026-11-11'; // First End-Sem Exam Date
+let selectedMood = '🌱';
 let doodleOn = false;
-let loginMode = 'student';
 let photoUrl = '';
 
 let calendarItems = [];
@@ -33,7 +32,7 @@ let events = [];
 let subjects = [];
 let marks = [];
 let journalEntries = [];
-let studentProfile = {};
+let currentStudent = null;
 
 // Toast Notification
 function toast(msg) {
@@ -42,12 +41,12 @@ function toast(msg) {
   t.textContent = msg;
   t.style.display = 'block';
   clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => t.style.display = 'none', 2600);
+  window.toastTimer = setTimeout(() => t.style.display = 'none', 2800);
 }
 
 // Navigation Router
 function go(id) {
-  if (!titles[id] && id !== 'login') return;
+  if (!titles[id] && id !== 'dashboard') return;
   currentScreen = id;
   $$('.screen').forEach(x => x.classList.toggle('active', x.id === id));
   $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.screen === id));
@@ -95,9 +94,9 @@ function esc(s) {
 
 function typeColor(t) {
   return ({
+    exam: '#9575cd',
     deadline: '#d99588',
     event: '#e6c96e',
-    exam: '#b2a5ce',
     completed: '#9ebd8e'
   })[t] || '#8fb6c2';
 }
@@ -125,6 +124,193 @@ function modal(title, fieldsHtml, onSave) {
 $('#closeModal').onclick = $('#cancelModal').onclick = () => $('#modal').classList.remove('show');
 $('#modal').onclick = e => { if (e.target.id === 'modal') $('#modal').classList.remove('show'); };
 
+// ========================================================
+// AUTHENTICATION & GATED ACCESS CONTROL
+// Only after signing in can the student see the website!
+// ========================================================
+function checkAuthStatus() {
+  const savedUser = localStorage.getItem('clockit_user');
+  if (savedUser) {
+    try {
+      currentStudent = JSON.parse(savedUser);
+      revealApp();
+      return;
+    } catch (e) {
+      localStorage.removeItem('clockit_user');
+    }
+  }
+  // Not logged in -> Show Auth Portal and hide main app
+  lockApp();
+}
+
+function lockApp() {
+  currentStudent = null;
+  const portal = $('#authPortal');
+  const app = $('#appContainer');
+  if (portal) portal.classList.remove('hidden');
+  if (app) app.style.display = 'none';
+}
+
+function revealApp() {
+  const portal = $('#authPortal');
+  const app = $('#appContainer');
+  if (portal) portal.classList.add('hidden');
+  if (app) app.style.display = 'grid';
+
+  updateUserDisplay();
+  initAppData();
+}
+
+function updateUserDisplay() {
+  if (!currentStudent) return;
+  const name = currentStudent.name || 'Student';
+  const roll = currentStudent.rollNumber || currentStudent.roll_number || '2023506001';
+  const dept = currentStudent.department || 'Computer Technology';
+  const sem = currentStudent.semester || 3;
+  const gender = currentStudent.gender || 'Female';
+
+  // Update topbar badges
+  const topName = $('#topStudentName');
+  if (topName) topName.textContent = name;
+  const topDeptSem = $('#topStudentDeptSem');
+  if (topDeptSem) topDeptSem.textContent = `Sem ${sem} · ${dept}`;
+  const topGender = $('#topGenderBadge');
+  if (topGender) {
+    topGender.textContent = gender.toUpperCase();
+    topGender.className = 'gender-badge ' + (gender.toLowerCase().includes('male') ? 'male' : '');
+  }
+  const topAvatar = $('#topAvatar');
+  if (topAvatar) {
+    if (currentStudent.avatarUrl) {
+      topAvatar.innerHTML = `<img src="${currentStudent.avatarUrl}" alt="Avatar">`;
+    } else {
+      topAvatar.textContent = name.trim()[0].toUpperCase();
+    }
+  }
+
+  // Update Dashboard greeting
+  const dashName = $('#dashStudentName');
+  if (dashName) dashName.textContent = name.split(' ')[0];
+}
+
+// Auth Tab Switching
+const tabRegister = $('#authTabRegister');
+const tabLogin = $('#authTabLogin');
+const fullForm = $('#authFullForm');
+const quickForm = $('#authQuickForm');
+
+if (tabRegister && tabLogin) {
+  tabRegister.onclick = () => {
+    tabRegister.classList.add('active');
+    tabLogin.classList.remove('active');
+    fullForm.style.display = 'block';
+    quickForm.style.display = 'none';
+  };
+
+  tabLogin.onclick = () => {
+    tabLogin.classList.add('active');
+    tabRegister.classList.remove('active');
+    fullForm.style.display = 'none';
+    quickForm.style.display = 'block';
+  };
+}
+
+const switchToReg = $('#switchToRegisterBtn');
+if (switchToReg) {
+  switchToReg.onclick = () => {
+    tabRegister.click();
+  };
+}
+
+// 1. Full Sign In / Registration Form
+if (fullForm) {
+  fullForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: $('#authName').value.trim(),
+      rollNumber: $('#authRoll').value.trim(),
+      department: $('#authDept').value,
+      semester: parseInt($('#authSemester').value, 10),
+      gender: $('#authGender').value,
+      password: $('#authPassword').value.trim()
+    };
+
+    try {
+      const student = await API.registerOrSignIn(payload);
+      currentStudent = student;
+      localStorage.setItem('clockit_user', JSON.stringify(student));
+      toast(`Welcome to ClockIt, ${student.name}! ✿`);
+      revealApp();
+    } catch (err) {
+      toast('Registration Error: ' + err.message);
+    }
+  };
+}
+
+// 2. Quick Login Form
+if (quickForm) {
+  quickForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      rollNumber: $('#quickRoll').value.trim(),
+      password: $('#quickPassword').value.trim()
+    };
+
+    try {
+      const student = await API.login(payload);
+      currentStudent = student;
+      localStorage.setItem('clockit_user', JSON.stringify(student));
+      toast(`Welcome back, ${student.name}! ✿`);
+      revealApp();
+    } catch (err) {
+      toast('Login failed: ' + err.message);
+    }
+  };
+}
+
+// 3. Quick Demo Login Button
+const quickDemoBtn = $('#quickDemoBtn');
+if (quickDemoBtn) {
+  quickDemoBtn.onclick = async () => {
+    const demoPayload = {
+      name: 'Priyanthi A',
+      rollNumber: '2023506001',
+      department: 'Computer Technology',
+      semester: 3,
+      gender: 'Female',
+      password: 'clockit2026'
+    };
+
+    try {
+      const student = await API.registerOrSignIn(demoPayload);
+      currentStudent = student;
+      localStorage.setItem('clockit_user', JSON.stringify(student));
+      toast(`Signed in as ${student.name} (Demo) ✿`);
+      revealApp();
+    } catch (err) {
+      toast('Demo Login Error: ' + err.message);
+    }
+  };
+}
+
+// Sign Out Handler
+function signOut() {
+  localStorage.removeItem('clockit_user');
+  currentStudent = null;
+  lockApp();
+  toast('Signed out from ClockIt. See you soon! ✿');
+}
+
+const topSignOutBtn = $('#topSignOutBtn');
+if (topSignOutBtn) topSignOutBtn.onclick = signOut;
+
+const navSignOutBtn = $('#navSignOutBtn');
+if (navSignOutBtn) navSignOutBtn.onclick = signOut;
+
+// ========================================================
+// CORE APP FEATURES & DASHBOARD
+// ========================================================
+
 // 1. Dashboard Loading
 async function loadDashboard() {
   try {
@@ -133,7 +319,7 @@ async function loadDashboard() {
     $('#dashUpcoming').textContent = String(data.upcomingCount || 0).padStart(2, '0');
     $('#dashJournal').textContent = String(data.journalCount || 0).padStart(2, '0');
 
-    // Deadlines list
+    // Deadlines & Exams list
     const deadlinesList = $('#dashboardDeadlines');
     if (data.deadlines && data.deadlines.length > 0) {
       deadlinesList.innerHTML = data.deadlines.map(x => `
@@ -143,7 +329,7 @@ async function loadDashboard() {
             <b>${esc(x.title)}</b>
             <small>${fmtDate(x.date, { day: 'numeric', month: 'short' })} · ${esc(x.detail || '')}</small>
           </div>
-          <span class="tag ${x.type === 'event' ? '' : 'blue'}">${esc(x.type.toUpperCase())}</span>
+          <span class="tag ${x.type === 'exam' ? 'purple' : x.type === 'event' ? '' : 'blue'}" style="${x.type === 'exam' ? 'background:#d1c4e9;color:#311b92' : ''}">${esc(x.type.toUpperCase())}</span>
         </div>
       `).join('');
     } else {
@@ -151,7 +337,7 @@ async function loadDashboard() {
     }
 
     $('#clockDate').textContent = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }).toUpperCase();
-    $('#clockYear').textContent = new Date().getFullYear() + ' · LIVE DB';
+    $('#clockYear').textContent = new Date().getFullYear() + ' · CLOCKIT';
 
     // Refresh annual ring markers
     renderAcademicClock();
@@ -160,7 +346,7 @@ async function loadDashboard() {
   }
 }
 
-// 2. Academic Clock (Wheel / Ring)
+// 2. Academic Clock Wheel (Annual 12-Month Ring)
 function renderAcademicClock() {
   const clock = $('#academicClock');
   if (!clock) return;
@@ -196,18 +382,19 @@ function renderAcademicClock() {
     elapsed += days;
   });
 
-  // Daily graduations & week ticks
+  // Daily ticks & date labels
   elapsed = 0;
   for (let day = 0; day < yearDays; day++) {
     const date = new Date(year, 0, 1 + day);
     const isMonthStart = date.getDate() === 1;
     const isWeek = date.getDay() === 0;
     const pos = polar(day, isMonthStart ? 38.5 : 37.5);
+
     const tick = document.createElement('span');
     tick.className = 'clock-tick' + (isMonthStart ? ' month-start' : isWeek ? ' week' : '');
     tick.style.left = pos.x + '%';
     tick.style.top = pos.y + '%';
-    tick.style.transform = `translate(-50%,0) rotate(${pos.a + 90}deg)`;
+    tick.style.transform = `translate(-50%, 0) rotate(${pos.a + 90}deg)`;
     tick.style.setProperty('--tick-h', isMonthStart ? '10px' : isWeek ? '6px' : '3px');
     clock.append(tick);
 
@@ -222,49 +409,60 @@ function renderAcademicClock() {
     }
   }
 
-  // Activity pins from database
+  // Activity markers from database calendar items
   const grouped = {};
   calendarItems.forEach(item => {
     if (!item.date) return;
     (grouped[item.date] ||= []).push(item);
   });
 
-  Object.entries(grouped).forEach(([date, items]) => items.forEach((item, index) => {
-    const [y, m, d] = date.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    if (y !== year) return;
-    const dayOfYear = Math.floor((dt - new Date(y, 0, 1)) / 86400000);
-    const pos = polar(dayOfYear, index ? 28.5 : 34);
+  Object.entries(grouped).forEach(([dateStr, items]) => {
+    items.forEach((item, index) => {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      if (y !== year) return;
 
-    const marker = document.createElement('button');
-    marker.type = 'button';
-    marker.className = 'activity-marker ' + (item.type || 'deadline');
-    marker.style.setProperty('--ax', pos.x + '%');
-    marker.style.setProperty('--ay', pos.y + '%');
-    marker.title = `${item.title} · ${fmtDate(date, { day: 'numeric', month: 'long', year: 'numeric' })} · ${item.type}`;
-    marker.setAttribute('aria-label', marker.title);
-    marker.onclick = () => {
-      selectedDate = date;
-      calendarDate = new Date(y, m - 1, 1);
-      go('calendar');
-    };
-    clock.append(marker);
-  }));
+      const dayOfYear = Math.floor((dt - new Date(y, 0, 1)) / 86400000);
+      const pos = polar(dayOfYear, index ? 28.5 : 34);
 
-  // Hands
+      const marker = document.createElement('button');
+      marker.type = 'button';
+      marker.className = 'activity-marker ' + (item.type || 'deadline');
+      marker.style.setProperty('--ax', pos.x + '%');
+      marker.style.setProperty('--ay', pos.y + '%');
+      marker.title = `${item.title} · ${fmtDate(dateStr, { day: 'numeric', month: 'long', year: 'numeric' })} · ${item.type.toUpperCase()}`;
+      marker.setAttribute('aria-label', marker.title);
+
+      marker.onclick = () => {
+        selectedDate = dateStr;
+        calendarDate = new Date(y, m - 1, 1);
+        go('calendar');
+        toast(`Viewing: ${item.title}`);
+      };
+
+      clock.append(marker);
+    });
+  });
+
+  // Current real-time clock hands
   const now = new Date();
-  $('#hourHand').style.transform = `rotate(${(now.getHours() % 12) * 30 + now.getMinutes() / 2}deg)`;
-  $('#minuteHand').style.transform = `rotate(${now.getMinutes() * 6}deg)`;
+  const hourDeg = (now.getHours() % 12) * 30 + now.getMinutes() / 2;
+  const minDeg = now.getMinutes() * 6;
+  $('#hourHand').style.transform = `rotate(${hourDeg}deg)`;
+  $('#minuteHand').style.transform = `rotate(${minDeg}deg)`;
 }
 
-// 3. Calendar Screen
+// 3. Academic Calendar & Exam Timetable
 async function renderCalendar() {
   renderAcademicClock();
-  const y = calendarDate.getFullYear(), m = calendarDate.getMonth();
+
+  const y = calendarDate.getFullYear();
+  const m = calendarDate.getMonth();
   $('#monthTitle').textContent = calendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
   const grid = $('#calendarGrid');
   grid.innerHTML = '';
+
   ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].forEach(w => {
     const el = document.createElement('div');
     el.className = 'weekday';
@@ -272,18 +470,20 @@ async function renderCalendar() {
     grid.append(el);
   });
 
-  const first = new Date(y, m, 1).getDay();
-  const days = new Date(y, m + 1, 0).getDate();
-  const prevDays = new Date(y, m, 0).getDate();
+  const firstDay = new Date(y, m, 1).getDay();
+  const totalDays = new Date(y, m + 1, 0).getDate();
+  const prevMonthDays = new Date(y, m, 0).getDate();
 
   for (let i = 0; i < 42; i++) {
-    const d = i - first + 1;
-    let dt, muted = false;
+    const d = i - firstDay + 1;
+    let dt;
+    let muted = false;
+
     if (d < 1) {
-      dt = iso(y, m - 1, prevDays + d);
+      dt = iso(y, m - 1, prevMonthDays + d);
       muted = true;
-    } else if (d > days) {
-      dt = iso(y, m + 1, d - days);
+    } else if (d > totalDays) {
+      dt = iso(y, m + 1, d - totalDays);
       muted = true;
     } else {
       dt = iso(y, m, d);
@@ -291,29 +491,48 @@ async function renderCalendar() {
 
     const b = document.createElement('button');
     b.className = 'day' + (muted ? ' muted' : '') + (dt === '2026-10-20' ? ' today' : '') + (dt === selectedDate ? ' selected' : '');
-    const dayMarkers = calendarItems.filter(x => x.date === dt).slice(0, 3).map(x => `<i style="background:${typeColor(x.type)}"></i>`).join('');
-    b.innerHTML = `${Number(dt.slice(-2))}<div class="day-markers">${dayMarkers}</div>`;
+
+    const dayItems = calendarItems.filter(x => x.date === dt);
+    const hasExam = dayItems.some(x => x.type === 'exam');
+    if (hasExam) b.style.borderColor = '#9575cd';
+
+    b.innerHTML = `
+      ${Number(dt.slice(-2))}
+      <div class="day-markers">
+        ${dayItems.slice(0, 3).map(x => `<i style="background:${typeColor(x.type)}"></i>`).join('')}
+      </div>
+    `;
+
     b.onclick = () => {
       selectedDate = dt;
       renderCalendar();
     };
+
     grid.append(b);
   }
 
-  $('#selectedDateTitle').textContent = fmtDate(selectedDate, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+  $('#selectedDateTitle').textContent = fmtDate(selectedDate, {
+    weekday: 'short', month: 'long', day: 'numeric', year: 'numeric'
+  });
+
   const list = calendarItems.filter(x => x.date === selectedDate);
   $('#selectedDateCount').textContent = `${list.length} ITEM${list.length === 1 ? '' : 'S'}`;
 
-  $('#selectedDateItems').innerHTML = list.length ? list.map(x => `
-    <div class="list-row">
-      <i class="swatch" style="background:${typeColor(x.type)};margin-top:5px"></i>
-      <div style="flex:1">
-        <b>${esc(x.title)}</b>
-        <small>${esc(x.detail || '')}</small>
+  const itemsContainer = $('#selectedDateItems');
+  if (list.length > 0) {
+    itemsContainer.innerHTML = list.map(x => `
+      <div class="list-row" style="${x.type === 'exam' ? 'border-left: 4px solid #7d65b5; background:#faf7ff;' : ''}">
+        <i class="swatch" style="background:${typeColor(x.type)};margin-top:5px"></i>
+        <div style="flex:1">
+          <b>${esc(x.title)}</b>
+          <small>${esc(x.detail || '')}</small>
+        </div>
+        <span class="tag ${x.type === 'exam' ? 'purple' : x.type === 'event' ? '' : 'blue'}" style="${x.type === 'exam' ? 'background:#d1c4e9;color:#311b92' : ''}">${esc(x.type.toUpperCase())}</span>
       </div>
-      <span class="tag ${x.type === 'event' ? '' : 'blue'}">${esc(x.type.toUpperCase())}</span>
-    </div>
-  `).join('') : '<div class="empty">A little blank space. Add a deadline, event or reminder for this day. ✿</div>';
+    `).join('');
+  } else {
+    itemsContainer.innerHTML = '<div class="empty">A peaceful open day. No official exams or submissions scheduled. ✿</div>';
+  }
 
   $('#adminCalendarCount').textContent = calendarItems.length;
 }
@@ -328,34 +547,38 @@ $('#nextMonth').onclick = () => {
   renderCalendar();
 };
 
-$('#addCalendarEvent').onclick = () => modal('Add a calendar item', `
-  <div class="field"><label>Title</label><input name="title" required placeholder="e.g. Assignment submission"></div>
+$('#addCalendarEvent').onclick = () => modal('Add Calendar Milestone', `
+  <div class="field"><label>Title</label><input name="title" required placeholder="e.g. End Sem Preparation or Lab Record"></div>
   <div class="field"><label>Date</label><input name="date" type="date" required value="${selectedDate}"></div>
   <div class="field"><label>Category</label><select name="type">
-    <option value="deadline">Assignment / registration deadline</option>
-    <option value="event">Campus event</option>
-    <option value="exam">Exam / lab reminder</option>
-    <option value="completed">Completed work</option>
+    <option value="exam">Official End-Sem Exam / Lab Test</option>
+    <option value="deadline" selected>Assignment / Record Deadline</option>
+    <option value="event">Campus Event / Study Sprint</option>
+    <option value="completed">Completed Milestone</option>
   </select></div>
-  <div class="field"><label>Notes</label><input name="detail" placeholder="Time, location or reminder"></div>
-  <div class="note blue">Persisted in H2 SQL database via JDBC connection.</div>
+  <div class="field"><label>Notes / Timings / Venue</label><input name="detail" placeholder="e.g. FN (10:00 AM - 1:00 PM) · MIT Chromepet"></div>
 `, async (d) => {
-  const saved = await API.addCalendarItem({ ...d, detail: d.detail || 'Personal reminder' });
+  const saved = await API.addCalendarItem(d);
   calendarItems.push(saved);
   selectedDate = d.date;
   const [sy, sm] = d.date.split('-').map(Number);
   calendarDate = new Date(sy, sm - 1, 1);
   renderCalendar();
   loadDashboard();
-  toast('Calendar item saved to database ✿');
+  toast('Item saved to SQL database ✿');
 });
 
 // 4. Campus Events Screen
 async function renderEvents() {
   const root = $('#eventCards');
+  if (!events.length) {
+    root.innerHTML = '<div class="empty" style="grid-column:1/-1">No campus events currently scheduled.</div>';
+    return;
+  }
+
   root.innerHTML = events.map((e, i) => `
     <article class="panel">
-      <div class="event-poster">${['✧ meet & share', '⌘ make & learn', '✿ find your people'][i % 3]}</div>
+      <div class="event-poster">${['✧ meet & share', '⌘ code & sprint', '✿ find your calm'][i % 3]}</div>
       <span class="tag ${i === 1 ? 'blue' : i === 2 ? 'green' : ''}">${esc(e.category)}</span>
       <h3 style="margin-top:12px">${esc(e.title)}</h3>
       <p style="font-size:12px;line-height:1.6;color:var(--muted)">${esc(e.description || '')}</p>
@@ -363,92 +586,112 @@ async function renderEvents() {
         <span>▦</span>
         <div>
           <b>${fmtDate(e.date, { day: 'numeric', month: 'long', year: 'numeric' })} · ${esc(e.time || '')}</b>
-          <small>${esc(e.place || 'Venue TBC')}</small>
+          <small>${esc(e.place || 'MIT Campus')}</small>
         </div>
       </div>
-      <button class="btn ${e.registered ? 'ghost' : 'yellow'}" style="width:100%;margin-top:12px" data-event-id="${esc(e.id)}">
-        ${e.registered ? '✓ Registered' : 'Register interest →'}
+      <button class="btn ${e.registered ? 'ghost' : 'yellow'}" style="width:100%;margin-top:12px" data-register="${esc(e.id)}">
+        ${e.registered ? '✓ Registered in Database' : 'Register interest →'}
       </button>
     </article>
   `).join('');
 
-  root.querySelectorAll('[data-event-id]').forEach(b => {
+  root.querySelectorAll('[data-register]').forEach(b => {
     b.onclick = async () => {
-      const id = b.dataset.eventId;
-      try {
-        const res = await API.toggleEventRegistration(id);
-        events = res.events;
-        renderEvents();
-        toast('Event registration updated in database');
-      } catch (err) {
-        toast('Error: ' + err.message);
-      }
+      const id = b.dataset.register;
+      const res = await API.toggleEventRegistration(id);
+      events = res.events;
+      renderEvents();
+      toast('Registration updated in database');
     };
   });
 
   $('#adminEventCount').textContent = events.length;
 }
 
-$('#createEventBtn').onclick = () => modal('Add a campus event', `
-  <div class="field"><label>Event title</label><input name="title" required></div>
+$('#createEventBtn').onclick = () => modal('Add Campus Event', `
+  <div class="field"><label>Event title</label><input name="title" required placeholder="e.g. End-Sem Peer Discussion"></div>
   <div class="field"><label>Category</label><select name="category">
-    <option>TECH TALK</option>
     <option>WORKSHOP</option>
+    <option>TECH TALK</option>
+    <option>STUDY SPRINT</option>
     <option>CAMPUS LIFE</option>
-    <option>CLUB EVENT</option>
   </select></div>
-  <div class="field"><label>Date</label><input name="date" type="date" required value="2026-11-15"></div>
+  <div class="field"><label>Date</label><input name="date" type="date" required value="2026-11-06"></div>
   <div class="field"><label>Time</label><input name="time" value="2:00 PM"></div>
-  <div class="field"><label>Venue</label><input name="place" placeholder="To be confirmed"></div>
-  <div class="field"><label>Description</label><textarea name="description" placeholder="What should students know?"></textarea></div>
+  <div class="field"><label>Venue</label><input name="place" placeholder="Rajam Hall, MIT Campus"></div>
+  <div class="field"><label>Description</label><textarea name="description" placeholder="Details about this campus activity..."></textarea></div>
 `, async (d) => {
   const saved = await API.addEvent(d);
   events.push(saved);
-  calendarItems.push({ id: 'cal-' + saved.id, title: saved.title, date: saved.date, type: 'event', detail: saved.place });
+  calendarItems.push({
+    id: 'cal-gen-' + Date.now(),
+    date: d.date,
+    type: 'event',
+    title: d.title,
+    detail: `Event · ${d.place || 'MIT Campus'}`
+  });
   renderEvents();
   renderCalendar();
   loadDashboard();
-  toast('Campus event saved to SQL database');
+  toast('Event created and saved to database');
 });
 
 // 5. Attendance Tracker Screen
 async function renderAttendance() {
   const tb = $('#attendanceRows');
+  if (!subjects.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="empty">No subjects in database.</td></tr>';
+    return;
+  }
+
   tb.innerHTML = subjects.map(s => {
-    const pct = s.attendancePercentage ?? (s.total > 0 ? Math.round(s.attended / s.total * 100) : 100);
+    const total = s.total || 0;
+    const attended = s.attended || 0;
+    const pct = total > 0 ? Math.round((attended / total) * 100) : 100;
+    const isShortage = pct < 75;
+
     return `
       <tr>
-        <td><b>${esc(s.name)}</b><br><small style="color:var(--muted)">${esc(s.code)}</small></td>
-        <td>${s.attended}</td>
-        <td>${s.total}</td>
-        <td><b>${pct}%</b></td>
         <td>
-          <div class="progress">
-            <span style="width:${pct}%;background:${pct < 75 ? '#d99588' : '#8fb6c2'}"></span>
+          <b>${esc(s.name)}</b><br>
+          <small style="color:var(--muted)">${esc(s.code)} · ${s.units} units</small>
+        </td>
+        <td>${attended}</td>
+        <td>${total}</td>
+        <td>
+          <b style="color:${isShortage ? '#c62828' : 'inherit'}">${pct}%</b>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="progress" style="flex:1">
+              <span style="width:${pct}%;background:${isShortage ? '#e57373' : '#81c784'}"></span>
+            </div>
+            <span class="tag ${isShortage ? 'pink' : 'green'}" style="font-size:9px">
+              ${isShortage ? '⚠ SHORTAGE (<75%)' : '✓ ELIGIBLE'}
+            </span>
           </div>
         </td>
       </tr>
     `;
   }).join('');
 
-  if (subjects.length > 0) {
-    const avg = Math.round(subjects.reduce((a, s) => a + (s.attendancePercentage || 0), 0) / subjects.length);
-    $('#dashAttendance').textContent = `${avg}%`;
-  }
+  const valid = subjects.filter(s => s.total > 0);
+  const avg = valid.length ? Math.round(valid.reduce((a, s) => a + (s.attended / s.total) * 100, 0) / valid.length) : 85;
+  $('#dashAttendance').textContent = avg + '%';
 }
 
-$('#recordAttendance').onclick = () => modal('Record attendance', `
+$('#recordAttendance').onclick = () => modal('Record Attendance for Today', `
   <div class="field"><label>Subject</label><select name="subject">
     ${subjects.map(s => `<option value="${esc(s.code)}">${esc(s.name)} (${esc(s.code)})</option>`).join('')}
   </select></div>
-  <div class="field"><label>Today's status</label><select name="status">
-    <option value="present">Present</option>
-    <option value="absent">Absent</option>
+  <div class="field"><label>Today's Status</label><select name="status">
+    <option value="present">Present (Attended)</option>
+    <option value="absent">Absent (Missed)</option>
   </select></div>
-  <div class="note blue">Updates total classes and attended classes directly in the H2 SQL database.</div>
+  <div class="note blue">Updates live subject totals in H2 database and recalculates exam eligibility.</div>
 `, async (d) => {
-  const res = await API.recordAttendance(d.subject, d.status);
-  subjects = res.subjects;
+  await API.recordAttendance(d.subject, d.status);
+  subjects = await API.getSubjects();
   renderAttendance();
   loadDashboard();
   toast('Attendance saved to database');
@@ -456,36 +699,45 @@ $('#recordAttendance').onclick = () => modal('Record attendance', `
 
 // 6. Syllabus Shelf Screen
 async function renderSyllabus() {
-  $('#syllabusCards').innerHTML = subjects.map(s => `
+  const container = $('#syllabusCards');
+  if (!subjects.length) {
+    container.innerHTML = '<div class="empty" style="grid-column:1/-1">No subjects found.</div>';
+    return;
+  }
+
+  container.innerHTML = subjects.map(s => `
     <div class="panel">
       <div class="panel-head">
         <h3>${esc(s.name)}</h3>
         <span class="pill">${esc(s.code)}</span>
       </div>
-      <div class="eyebrow">UNIT PROGRESS</div>
+      <div class="eyebrow">UNIT &amp; SYLLABUS PROGRESS</div>
       <div class="subject-row">
-        <span>Study progress</span>
+        <span>Curriculum Progress</span>
         <div class="progress"><span style="width:${s.progress}%"></span></div>
         <b>${s.progress}%</b>
       </div>
-      <p style="font-size:12px;color:var(--muted)">${s.units} syllabus units · CS23304 Core Curriculum</p>
-      <button class="btn ghost" data-edit-code="${esc(s.code)}">Edit subject</button>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">
+        ${s.units} syllabus units · Anna University Regulation 2023 · B.E. CSE / CT
+      </p>
+      <button class="btn ghost" data-edit-subject="${esc(s.code)}">Update progress</button>
     </div>
   `).join('');
 
-  $$('[data-edit-code]').forEach(b => {
+  $$('[data-edit-subject]').forEach(b => {
     b.onclick = () => {
-      const s = subjects.find(x => x.code === b.dataset.editCode);
+      const s = subjects.find(x => x.code === b.dataset.editSubject);
       if (!s) return;
-      modal('Edit subject', `
-        <div class="field"><label>Subject name</label><input name="name" required value="${esc(s.name)}" readonly></div>
-        <div class="field"><label>Units</label><input name="units" type="number" min="1" max="20" value="${s.units}"></div>
-        <div class="field"><label>Progress %</label><input name="progress" type="number" min="0" max="100" value="${s.progress}"></div>
+      modal('Update Subject Progress', `
+        <div class="field"><label>Subject Name</label><input name="name" required value="${esc(s.name)}"></div>
+        <div class="field"><label>Number of Units</label><input name="units" type="number" min="1" max="10" value="${s.units}"></div>
+        <div class="field"><label>Completed Progress (%)</label><input name="progress" type="number" min="0" max="100" value="${s.progress}"></div>
       `, async (d) => {
-        const res = await API.updateSubject(s.code, { units: d.units, progress: d.progress });
-        subjects = res.subjects;
+        await API.updateSubject(s.code, d);
+        subjects = await API.getSubjects();
         renderSyllabus();
-        toast('Subject progress saved to SQL database');
+        renderAttendance();
+        toast('Syllabus progress updated in database');
       });
     };
   });
@@ -493,10 +745,10 @@ async function renderSyllabus() {
   $('#adminSubjectCount').textContent = subjects.length;
 }
 
-$('#addSubject').onclick = () => modal('Add a curriculum subject', `
-  <div class="field"><label>Subject name</label><input name="name" required placeholder="e.g. Operating Systems"></div>
-  <div class="field"><label>Subject code</label><input name="code" required placeholder="e.g. CS23305"></div>
-  <div class="field"><label>Number of units</label><input name="units" type="number" min="1" value="5"></div>
+$('#addSubject').onclick = () => modal('Add Curriculum Subject', `
+  <div class="field"><label>Subject Name</label><input name="name" required placeholder="e.g. Machine Learning"></div>
+  <div class="field"><label>Subject Code</label><input name="code" required placeholder="CS23603"></div>
+  <div class="field"><label>Total Units</label><input name="units" type="number" min="1" value="5"></div>
   <div class="field"><label>Initial progress %</label><input name="progress" type="number" min="0" max="100" value="0"></div>
 `, async (d) => {
   const saved = await API.addSubject(d);
@@ -529,13 +781,13 @@ async function renderMarks() {
   });
 }
 
-$('#addMark').onclick = () => modal('Add an assessment mark', `
+$('#addMark').onclick = () => modal('Add Assessment Score', `
   <div class="field"><label>Subject</label><select name="subject">
     ${subjects.map(s => `<option>${esc(s.name)}</option>`).join('')}
   </select></div>
-  <div class="field"><label>Assessment name</label><input name="assessment" required placeholder="Assignment / test / lab"></div>
-  <div class="field"><label>Score</label><input name="score" type="number" min="0" step="0.5" required value="0"></div>
-  <div class="field"><label>Out of</label><input name="outof" type="number" min="1" step="0.5" required value="20"></div>
+  <div class="field"><label>Assessment Name</label><input name="assessment" required placeholder="e.g. Assessment 1 / Lab Practical"></div>
+  <div class="field"><label>Score Obtained</label><input name="score" type="number" min="0" step="0.5" required value="0"></div>
+  <div class="field"><label>Total Marks (Out of)</label><input name="outof" type="number" min="1" step="0.5" required value="20"></div>
 `, async (d) => {
   const saved = await API.addMark(d);
   marks.push(saved);
@@ -595,7 +847,7 @@ $('#saveJournal').onclick = async () => {
     journalEntries.unshift(saved);
     renderJournal();
     loadDashboard();
-    $('#journalSaveState').textContent = 'Saved to the database! Persisted across sessions. ♡';
+    $('#journalSaveState').textContent = 'Saved to H2 SQL database! Persisted across all sessions. ♡';
     toast('Journal entry saved to SQL database');
   } catch (err) {
     toast('Error: ' + err.message);
@@ -604,18 +856,18 @@ $('#saveJournal').onclick = async () => {
 
 // 9. Student Profile Screen
 async function renderProfile() {
-  if (studentProfile.name) {
-    $('#profileName').value = studentProfile.name || 'Student';
-    $('#profileRoll').value = studentProfile.rollNumber || 'DEMO-ROLL-001';
-    $('#profileDept').value = studentProfile.department || 'Computer Technology';
-    $('#profileProgramme').value = studentProfile.programme || '';
-    $('#profileSemester').value = studentProfile.semester || '4';
-    $('.profile-dot').textContent = (studentProfile.name || 'S')[0].toUpperCase();
+  if (currentStudent) {
+    $('#profileName').value = currentStudent.name || 'Priyanthi A';
+    $('#profileRoll').value = currentStudent.rollNumber || currentStudent.roll_number || '2023506001';
+    $('#profileDept').value = currentStudent.department || 'Computer Technology';
+    $('#profileProgramme').value = currentStudent.programme || 'B.E. Computer Science and Engineering';
+    $('#profileSemester').value = currentStudent.semester || '3';
+    $('#profileGender').value = currentStudent.gender || 'Female';
 
-    if (studentProfile.avatarUrl) {
-      $('#avatarPreview').innerHTML = `<img src="${studentProfile.avatarUrl}" alt="Profile avatar">`;
+    if (currentStudent.avatarUrl) {
+      $('#avatarPreview').innerHTML = `<img src="${currentStudent.avatarUrl}" alt="Profile avatar">`;
     }
-    if (studentProfile.doodleApplied) {
+    if (currentStudent.doodleApplied) {
       $('#avatarPreview').classList.add('doodle-preview');
       $('#doodleToggle').textContent = 'Remove doodle-inspired filter';
       doodleOn = true;
@@ -649,20 +901,25 @@ $('#doodleToggle').onclick = () => {
 
 $('#saveProfile').onclick = async () => {
   const payload = {
-    name: $('#profileName').value.trim() || 'Student',
-    rollNumber: $('#profileRoll').value.trim() || 'DEMO-ROLL-001',
+    name: $('#profileName').value.trim() || 'Priyanthi A',
+    rollNumber: $('#profileRoll').value.trim() || '2023506001',
     department: $('#profileDept').value,
     programme: $('#profileProgramme').value.trim(),
-    semester: $('#profileSemester').value,
-    avatarUrl: photoUrl || studentProfile.avatarUrl || '',
+    semester: parseInt($('#profileSemester').value, 10),
+    gender: $('#profileGender').value,
+    avatarUrl: photoUrl || (currentStudent && currentStudent.avatarUrl) || '',
     doodleApplied: doodleOn
   };
 
+  const newPass = $('#profilePassword').value.trim();
+  if (newPass) payload.password = newPass;
+
   try {
     const updated = await API.updateProfile(payload);
-    studentProfile = updated;
-    $('.profile-dot').textContent = updated.name[0].toUpperCase();
-    toast('Profile details updated in SQL database');
+    currentStudent = updated;
+    localStorage.setItem('clockit_user', JSON.stringify(updated));
+    updateUserDisplay();
+    toast('Profile updated in H2 SQL database ✿');
   } catch (err) {
     toast('Error: ' + err.message);
   }
@@ -680,27 +937,7 @@ async function renderAdmin() {
   }
 }
 
-// 11. Login Flow Demo
-$('#studentTab').onclick = () => setLogin('student');
-$('#adminTab').onclick = () => setLogin('admin');
-
-function setLogin(m) {
-  loginMode = m;
-  $('#studentTab').classList.toggle('ghost', m !== 'student');
-  $('#adminTab').classList.toggle('ghost', m !== 'admin');
-  $('#loginHeading').textContent = m === 'student' ? 'Welcome back ♡' : 'Admin demo access';
-  $('#loginDesc').textContent = m === 'student' ? 'Use sample details to preview the student journey.' : 'Demo admin desk connected to live Java backend.';
-  $('#loginIdLabel').textContent = m === 'student' ? 'Roll number' : 'Admin ID';
-  $('#loginId').value = m === 'student' ? (studentProfile.rollNumber || 'DEMO-ROLL-001') : 'admin.mit';
-  $('#loginPassword').value = 'cs23304';
-}
-
-$('#loginSubmit').onclick = () => {
-  toast('Signed in successfully');
-  go(loginMode === 'admin' ? 'admin' : 'dashboard');
-};
-
-// 12. Global Search Handler
+// 11. Global Search Handler
 $('#globalSearch').addEventListener('keydown', async (e) => {
   if (e.key !== 'Enter') return;
   const q = e.target.value.trim();
@@ -725,18 +962,16 @@ $('#globalSearch').addEventListener('keydown', async (e) => {
   }
 });
 
-// Initial Bootstrap on Page Load
-async function initApp() {
+// Fetch all initial data once student is authenticated
+async function initAppData() {
   try {
-    // 1. Fetch initial dataset from Java REST API
-    const [overviewData, subjectsData, calendarData, eventsData, marksData, journalData, profileData] = await Promise.all([
+    const [overviewData, subjectsData, calendarData, eventsData, marksData, journalData] = await Promise.all([
       API.getOverview().catch(() => ({})),
       API.getSubjects().catch(() => []),
       API.getCalendar().catch(() => []),
       API.getEvents().catch(() => []),
       API.getMarks().catch(() => []),
-      API.getJournal().catch(() => []),
-      API.getProfile().catch(() => ({}))
+      API.getJournal().catch(() => [])
     ]);
 
     subjects = subjectsData;
@@ -744,9 +979,7 @@ async function initApp() {
     events = eventsData;
     marks = marksData;
     journalEntries = journalData;
-    studentProfile = profileData;
 
-    // Render initial views
     renderAcademicClock();
     loadDashboard();
     renderCalendar();
@@ -758,10 +991,13 @@ async function initApp() {
     renderProfile();
     renderAdmin();
 
-    console.log('✨ MIT Academic Clock connected to Java Backend & H2 SQL Database.');
+    console.log('✨ ClockIt platform initialized with H2 SQL Database.');
   } catch (err) {
-    console.error('Initialization error:', err);
+    console.error('Data initialization error:', err);
   }
 }
 
-initApp();
+// Bootstrap on window load
+window.addEventListener('DOMContentLoaded', () => {
+  checkAuthStatus();
+});
