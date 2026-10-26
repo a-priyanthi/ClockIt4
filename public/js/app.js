@@ -925,13 +925,100 @@ $('#saveProfile').onclick = async () => {
   }
 };
 
-// 10. Admin Metrics Screen
+// 10. Admin Metrics & SQL Database Explorer
+let currentDbTable = 'students';
+
+async function renderDbTable(table) {
+  currentDbTable = table || 'students';
+  const meta = $('#dbTableMeta');
+  const container = $('#dbTableContainer');
+  if (!container) return;
+
+  $$('.db-tab-btn').forEach(btn => {
+    btn.classList.toggle('yellow', btn.dataset.table === currentDbTable);
+    btn.classList.toggle('ghost', btn.dataset.table !== currentDbTable);
+  });
+
+  try {
+    let rows = [];
+    let cols = [];
+
+    if (currentDbTable === 'students') {
+      const s = await API.getProfile();
+      rows = s ? [s] : [];
+      cols = ['rollNumber', 'name', 'department', 'semester', 'gender', 'programme', 'password'];
+    } else if (currentDbTable === 'subjects') {
+      rows = await API.getSubjects();
+      cols = ['code', 'name', 'units', 'progress', 'attended', 'total'];
+    } else if (currentDbTable === 'calendar_items') {
+      rows = await API.getCalendar();
+      cols = ['date', 'title', 'type', 'detail'];
+    } else if (currentDbTable === 'campus_events') {
+      rows = await API.getEvents();
+      cols = ['date', 'title', 'category', 'place', 'time', 'registered'];
+    } else if (currentDbTable === 'assessment_marks') {
+      rows = await API.getMarks();
+      cols = ['subject', 'assessment', 'score', 'outof'];
+    } else if (currentDbTable === 'journal_entries') {
+      rows = await API.getJournal();
+      cols = ['date', 'title', 'mood', 'text'];
+    }
+
+    if (meta) {
+      meta.innerHTML = `Showing records for table: <b style="color:var(--text);font-family:monospace">${currentDbTable}</b> (${rows.length} rows)`;
+    }
+
+    if (!rows || rows.length === 0) {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No records in table.</div>';
+      return;
+    }
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left">';
+    html += '<thead style="background:var(--bg);border-bottom:1px solid var(--border)"><tr>';
+    cols.forEach(c => {
+      html += `<th style="padding:10px 14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">${c}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach((r, idx) => {
+      const bg = idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)';
+      html += `<tr style="border-bottom:1px solid var(--border);background:${bg}">`;
+      cols.forEach(c => {
+        let val = r[c] !== undefined && r[c] !== null ? r[c] : '';
+        if (typeof val === 'boolean') {
+          val = val ? '<span class="tag green">TRUE</span>' : '<span class="tag">FALSE</span>';
+        } else if (c === 'progress') {
+          val = `<span class="pill" style="background:#eaf0ea;color:#2d5032;font-weight:600">${val}%</span>`;
+        } else if (c === 'type' || c === 'category') {
+          val = `<span class="pill" style="font-size:11px">${esc(String(val))}</span>`;
+        } else if (c === 'text' && String(val).length > 80) {
+          val = esc(String(val).substring(0, 80)) + '...';
+        } else {
+          val = esc(String(val));
+        }
+        html += `<td style="padding:10px 14px;vertical-align:top">${val}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="padding:20px;color:#a63d33">Failed to load table rows: ${esc(err.message)}</div>`;
+  }
+}
+
+$$('.db-tab-btn').forEach(b => {
+  b.onclick = () => renderDbTable(b.dataset.table);
+});
+
 async function renderAdmin() {
   try {
     const stats = await API.getAdminStats();
     $('#adminCalendarCount').textContent = stats.calendarItems || 0;
     $('#adminEventCount').textContent = stats.events || 0;
     $('#adminSubjectCount').textContent = stats.subjects || 0;
+    renderDbTable(currentDbTable);
   } catch (err) {
     console.warn('Admin stats error:', err);
   }
