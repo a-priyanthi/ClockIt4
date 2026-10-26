@@ -1,0 +1,8 @@
+data/
+bin/
+lib/
+*.bat
+pom.xml
+sources.txt
+sources_raw.txt
+.git

@@ -2,8 +2,9 @@
   "name": "clockit",
   "version": "1.0.0",
   "description": "ClockIt — Academic Calendar & Study Space for Anna University MIT Campus",
-  "main": "api/index.js",
+  "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "node test-all.js"
   },
   "keywords": [
@@ -15,5 +16,8 @@
     "exam-timetable"
   ],
   "author": "Priyanthi A",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
 }

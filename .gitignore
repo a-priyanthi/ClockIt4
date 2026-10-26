@@ -25,3 +25,10 @@ data/*.lock.db
 # OS specific
 .DS_Store
 Thumbs.db
+# Node modules
+node_modules/
+package-lock.json
+
+# Vercel & environment
+.vercel
+.env*
