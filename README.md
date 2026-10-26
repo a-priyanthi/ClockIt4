@@ -119,6 +119,24 @@ Runs an automated 11-step integration test validating registration, authenticati
 
 ---
 
+## ⚡ Deploying to Vercel (1-Click Cloud Deployment)
+
+ClockIt is fully optimized for **Vercel** with a zero-configuration serverless setup (`vercel.json` and `api/index.js`):
+
+1. Go to **[vercel.com](https://vercel.com)** and sign in with your GitHub account.
+2. Click **"Add New..."** → **"Project"**.
+3. Import the repository **`a-priyanthi/ClockIt4`**.
+4. Leave the default settings:
+   - **Framework Preset**: *Other*
+   - **Root Directory**: `./`
+   - **Build Command**: *None*
+   - **Output Directory**: *public* (or default)
+5. Click **"Deploy"**.
+
+Within seconds, your live production URL will be ready, hosting the complete interactive ClockIt web platform, authentication portal, Anna University Semester 3 syllabus tracker, and official November 2026 End-Sem exam countdown!
+
+---
+
 ## 📚 Curriculum Subjects Supported (Semester III CSE/CT)
 1. `MA23C05` — Probability and Statistics (4 credits)
 2. `CS23301` — Software Engineering (3 credits)

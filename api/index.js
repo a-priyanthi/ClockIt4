@@ -79,7 +79,23 @@ module.exports = async (req, res) => {
   }
 
   const method = req.method.toUpperCase();
-  const body = req.body || {};
+  let body = req.body || {};
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      body = {};
+    }
+  } else if (!req.body && method !== 'GET' && method !== 'HEAD') {
+    body = await new Promise((resolve) => {
+      let data = '';
+      req.on('data', chunk => { data += chunk; });
+      req.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { resolve({}); }
+      });
+      req.on('error', () => resolve({}));
+    });
+  }
 
   try {
     // 1. Auth: Sign In / Register
