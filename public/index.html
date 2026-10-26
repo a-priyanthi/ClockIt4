@@ -4,40 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClockIt — Academic Calendar &amp; Study Space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Titan+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
   <!-- ========================================== -->
   <!-- CLOCKIT AUTHENTICATION PORTAL (GATED ACCESS) -->
+  <!-- Inspired by Chunky Coral-Red & Sparkle Aesthetic -->
   <!-- ========================================== -->
   <div class="auth-portal" id="authPortal">
-    <div class="auth-card-wrap">
-      <!-- Left Branding Hero -->
-      <div class="auth-hero">
-        <div>
-          <div class="brand-icon">◷</div>
-          <h2>ClockIt</h2>
-          <span class="pill" style="display:inline-block;margin:6px 0 14px;background:#fff8df">ANNA UNIVERSITY · MIT CAMPUS</span>
-          <p>Your calm academic companion for semester planning, official End-Semester exam tracking, attendance calculation, and gentle daily study habits.</p>
-          
-          <div class="auth-features">
-            <div class="auth-feature-item"><span>⏰</span> Interactive 12-Month Academic Clock</div>
-            <div class="auth-feature-item"><span>📋</span> Real Semester 3 Syllabus &amp; Unit Shelf</div>
-            <div class="auth-feature-item"><span>📅</span> Official Nov/Dec 2026 End-Sem Exam Timetable</div>
-            <div class="auth-feature-item"><span>✓</span> Subject Attendance &amp; Marks Database</div>
-            <div class="auth-feature-item"><span>✿</span> Daily Scrapbook Journal &amp; Mood Tracker</div>
-          </div>
-        </div>
+    <!-- Floating Sparkle Stars (4-point curved diamond stars matching reference) -->
+    <svg class="sparkle-star star-top-left-tall" viewBox="0 0 80 140" aria-hidden="true">
+      <path d="M40 0 C40 50 20 70 0 70 C20 70 40 90 40 140 C40 90 60 70 80 70 C60 70 40 50 40 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-mid-left-poking" viewBox="0 0 100 70" aria-hidden="true">
+      <path d="M50 0 C50 22 30 35 0 35 C30 35 50 48 50 70 C50 48 70 35 100 35 C70 35 50 22 50 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-bottom-left-small" viewBox="0 0 60 60" aria-hidden="true">
+      <path d="M30 0 C30 20 20 30 0 30 C20 30 30 40 30 60 C30 40 40 30 60 30 C40 30 30 20 30 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-bottom-left-angled" viewBox="0 0 80 80" aria-hidden="true">
+      <path d="M40 0 C40 28 25 40 0 40 C25 40 40 52 40 80 C40 52 55 40 80 40 C55 40 40 28 40 0 Z" fill="#FFFFFF"/>
+    </svg>
 
-        <div class="side-note" style="margin-top:20px;background:#fef7dc;padding:12px;border-radius:12px">
-          “Small steps every day become big dreams.”<br>
-          <span style="font-size:11px;color:#6b848c">Please sign in to unlock your personal workspace ♡</span>
+    <svg class="sparkle-star star-top-right-small" viewBox="0 0 50 50" aria-hidden="true">
+      <path d="M25 0 C25 16 16 25 0 25 C16 25 25 34 25 50 C25 34 34 25 50 25 C34 25 25 16 25 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-upper-right-tall" viewBox="0 0 80 130" aria-hidden="true">
+      <path d="M40 0 C40 45 22 65 0 65 C22 65 40 85 40 130 C40 85 58 65 80 65 C58 65 40 45 40 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-mid-right" viewBox="0 0 70 70" aria-hidden="true">
+      <path d="M35 0 C35 24 22 35 0 35 C22 35 35 46 35 70 C35 46 48 35 70 35 C48 35 35 24 35 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-bottom-right-large" viewBox="0 0 100 150" aria-hidden="true">
+      <path d="M50 0 C50 55 25 75 0 75 C25 75 50 95 50 150 C50 95 75 75 100 75 C75 75 50 55 50 0 Z" fill="#FFFFFF"/>
+    </svg>
+    <svg class="sparkle-star star-bottom-right-angled" viewBox="0 0 70 70" aria-hidden="true">
+      <path d="M35 0 C35 24 22 35 0 35 C22 35 35 46 35 70 C35 46 48 35 70 35 C48 35 35 24 35 0 Z" fill="#FFFFFF"/>
+    </svg>
+
+    <div class="auth-container-coral">
+      <!-- Big Bubbly Display Stage (Exact match to uploaded image) -->
+      <div class="auth-brand-stage">
+        <h1 class="clockit-display-logo">ClockIt</h1>
+        <div class="auth-brand-tagline">
+          <span>✦</span> ACADEMIC CALENDAR &amp; STUDY SPACE · ANNA UNIVERSITY / MIT CAMPUS <span>✦</span>
         </div>
       </div>
 
-      <!-- Right Form Side -->
-      <div class="auth-form-side">
+      <!-- Auth Card Wrap -->
+      <div class="auth-card-porcelain">
         <div class="auth-tabs">
           <button type="button" class="auth-tab-btn active" id="authTabRegister">Student Sign-In / Register</button>
           <button type="button" class="auth-tab-btn" id="authTabLogin">Quick Sign In</button>
@@ -45,8 +64,10 @@
 
         <!-- Full Registration / Sign-In View -->
         <form id="authFullForm">
-          <h3 style="font:700 24px Georgia,serif;margin:0 0 6px">Welcome to ClockIt ♡</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Enter your details to create or access your student workspace.</p>
+          <div class="auth-form-head">
+            <h3>Enter Your Student Space ✿</h3>
+            <p>Access your Semester 3 syllabus shelf, attendance stats, and official Nov/Dec 2026 End-Sem exam countdown.</p>
+          </div>
 
           <div class="field">
             <label>Full Name</label>
@@ -103,15 +124,21 @@
           </div>
 
           <div class="auth-actions">
-            <button type="submit" class="btn yellow" style="width:100%;font-size:14px;padding:12px">Enter ClockIt ✿</button>
-            <button type="button" class="btn ghost" id="quickDemoBtn" style="width:100%;font-size:12px">⚡ 1-Click Quick Demo Login (Priyanthi - Sem 3)</button>
+            <button type="submit" class="btn coral-chunky" style="width:100%;font-size:15px;padding:14px">
+              Enter ClockIt ✦
+            </button>
+            <button type="button" class="btn butter-chip" id="quickDemoBtn" style="width:100%;font-size:13px">
+              ⚡ 1-Click Quick Demo Login (Priyanthi - Sem 3)
+            </button>
           </div>
         </form>
 
         <!-- Quick Login View (for returning students) -->
         <form id="authQuickForm" style="display:none">
-          <h3 style="font:700 24px Georgia,serif;margin:0 0 6px">Welcome Back ♡</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Enter your Roll Number and Password to access your saved workspace.</p>
+          <div class="auth-form-head">
+            <h3>Welcome Back ✿</h3>
+            <p>Enter your Roll Number and Password to access your saved workspace.</p>
+          </div>
 
           <div class="field">
             <label>Roll Number</label>
@@ -124,13 +151,17 @@
           </div>
 
           <div class="auth-actions">
-            <button type="submit" class="btn yellow" style="width:100%;font-size:14px;padding:12px">Sign In to ClockIt →</button>
-            <button type="button" class="btn ghost" id="switchToRegisterBtn" style="width:100%;font-size:12px">Need to register? Create account</button>
+            <button type="submit" class="btn coral-chunky" style="width:100%;font-size:15px;padding:14px">
+              Sign In to ClockIt ✦
+            </button>
+            <button type="button" class="btn ghost" id="switchToRegisterBtn" style="width:100%;font-size:12px">
+              Need to register? Create account
+            </button>
           </div>
         </form>
 
-        <div class="note blue" style="margin-top:16px;font-size:11px">
-          🔒 Database Protected: Data is securely stored in your embedded H2 SQL database.
+        <div class="auth-footer-pill">
+          🔒 <b>Database Protected</b> · Embedded H2 SQL Engine (Local) &amp; Serverless Cloud API (Vercel)
         </div>
       </div>
     </div>
