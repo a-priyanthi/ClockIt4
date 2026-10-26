@@ -94,18 +94,18 @@ function esc(s) {
 
 function typeColor(t) {
   return ({
-    exam: '#9575cd',
-    deadline: '#d99588',
-    event: '#e6c96e',
-    completed: '#9ebd8e'
-  })[t] || '#8fb6c2';
+    exam: '#7852FF',
+    deadline: '#FF4D52',
+    event: '#FFC043',
+    completed: '#2EC4B6'
+  })[t] || '#FF4D52';
 }
 
 // Modal Utility
 function modal(title, fieldsHtml, onSave) {
   $('#modalTitle').textContent = title;
   $('#modalFields').innerHTML = fieldsHtml;
-  $('#modal').classList.add('show');
+  $('#modal').classList.add('active', 'show');
 
   $('#modalForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -113,7 +113,7 @@ function modal(title, fieldsHtml, onSave) {
     new FormData(e.target).forEach((v, k) => data[k] = v);
     try {
       await onSave(data);
-      $('#modal').classList.remove('show');
+      $('#modal').classList.remove('active', 'show');
       e.target.reset();
     } catch (err) {
       toast('Error: ' + err.message);
@@ -121,8 +121,8 @@ function modal(title, fieldsHtml, onSave) {
   };
 }
 
-$('#closeModal').onclick = $('#cancelModal').onclick = () => $('#modal').classList.remove('show');
-$('#modal').onclick = e => { if (e.target.id === 'modal') $('#modal').classList.remove('show'); };
+$('#closeModal').onclick = $('#cancelModal').onclick = () => $('#modal').classList.remove('active', 'show');
+$('#modal').onclick = e => { if (e.target.id === 'modal') $('#modal').classList.remove('active', 'show'); };
 
 // ========================================================
 // AUTHENTICATION & GATED ACCESS CONTROL
